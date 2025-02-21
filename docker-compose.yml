@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: always
+    container_name: postgres-shop
+    ports:
+      - "5432:5432"
+    environment:
+      - 'POSTGRES_USER=sa'
+      - 'POSTGRES_HOST_AUTH_METHOD=trust'
+      - 'POSTGRES_DB=shop'
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8888:8080
+

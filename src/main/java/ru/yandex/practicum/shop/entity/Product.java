@@ -1,6 +1,8 @@
 package ru.yandex.practicum.shop.entity;
 
+import jakarta.persistence.Basic;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -9,7 +11,6 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.context.annotation.Lazy;
 
 @Entity
 @Table(name = "products")
@@ -23,7 +24,7 @@ public class Product {
     private Long id;
 
     @Lob
-    @Lazy
+    @Basic(fetch = FetchType.LAZY)
     private byte[] image;
 
     private String name;
