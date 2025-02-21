@@ -8,13 +8,6 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - 'POSTGRES_USER=sa'
-      - 'POSTGRES_HOST_AUTH_METHOD=trust'
-      - 'POSTGRES_DB=shop'
-
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8888:8080
-
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: shop

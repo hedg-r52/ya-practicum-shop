@@ -4,8 +4,8 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/shop
     driver-class-name: org.postgresql.Driver
-    username: postgres
-    password:
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
