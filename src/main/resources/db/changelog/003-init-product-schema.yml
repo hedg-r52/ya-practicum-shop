@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: create_product_sequence
+      author: hedg-r52
+      preConditions:
+        - not:
+            - sequenceExists:
+                sequenceName: product_sequence
+      changes:
+        - createSequence:
+            sequenceName: product_sequence
+            incrementBy: 1
+      rollback:
+        - dropSequence:
+            sequenceName: product_sequence
+  - changeSet:
+      id: create_table_products
+      author: hedg-r52
+      changes:
+        - createTable:
+            catalogName: shop
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: image
+                  type: longvarbinary
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: float
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+            tableName: products
+            schemaName: public
