@@ -19,16 +19,16 @@ databaseChangeLog:
       changes:
         - createTable:
             catalogName: shop
+            tableName: products
+            schemaName: public
             columns:
               - column:
                   name: id
                   type: bigint
                   autoIncrement: true
+                  valueSequenceNext: product_sequence
                   constraints:
                     primaryKey: true
-              - column:
-                  name: image
-                  type: longvarbinary
               - column:
                   name: name
                   type: varchar(255)
@@ -36,7 +36,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: price
-                  type: float
+                  type: decimal(10, 2)
                   constraints:
                     nullable: false
               - column:
@@ -44,5 +44,11 @@ databaseChangeLog:
                   type: varchar(255)
                   constraints:
                     nullable: false
-            tableName: products
-            schemaName: public
+              - column:
+                  name: image_id
+                  type: bigint
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_product_image
+                    references: images(id)
+                    onDelete: SET NULL

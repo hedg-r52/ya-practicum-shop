@@ -8,6 +8,8 @@ import ru.yandex.practicum.shop.mapper.ProductMapper;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.ProductService;
 
+import java.util.Optional;
+
 @Service
 public class ProductServiceImpl implements ProductService {
 
@@ -22,5 +24,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Page<ProductDto> findAll(Pageable pageable) {
         return productRepository.findAll(pageable).map(productMapper::toProductDto);
+    }
+
+    @Override
+    public Optional<ProductDto> getProductById(Long id) {
+        return productRepository.findById(id).map(productMapper::toProductDto);
     }
 }

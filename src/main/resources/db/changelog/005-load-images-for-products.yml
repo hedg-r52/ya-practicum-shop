@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: load-image-file-product-01
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_01.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-02
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_02.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-03
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_03.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-04
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_04.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-05
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_05.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-06
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_06.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-07
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_07.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-08
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_08.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-09
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_09.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-10
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_10.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: load-image-file-product-11
+      author: hedg-r52
+      changes:
+        - sqlFile:
+            path: sql-scripts/insert_image_for_product_11.sql
+            relativeToChangelogFile: true

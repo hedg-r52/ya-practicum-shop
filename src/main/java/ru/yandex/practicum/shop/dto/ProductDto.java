@@ -11,7 +11,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ProductDto {
     Long id;
-    byte[] image;
     String name;
     Float price;
     String description;

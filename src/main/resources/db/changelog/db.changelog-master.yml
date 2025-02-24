@@ -6,8 +6,14 @@ databaseChangeLog:
       file: 002-init-order-item-schema.yml
       relativeToChangelogFile: true
   - include:
-      file: 003-init-product-schema.yml
+      file: 003-init-image-schema.yml
       relativeToChangelogFile: true
   - include:
-      file: 004-insert-products.yml
+      file: 004-init-product-schema.yml
+      relativeToChangelogFile: true
+  - include:
+      file: 005-load-images-for-products.yml
+      relativeToChangelogFile: true
+  - include:
+      file: 006-insert-products.yml
       relativeToChangelogFile: true

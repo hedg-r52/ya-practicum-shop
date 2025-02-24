@@ -18,11 +18,14 @@
 
       .product-card {
           align-self: auto;
-          height: 300px;
+          height: 400px;
           width: 200px;
           border: dimgray 1px dashed;
           border-radius: 5px;
           padding: 10px;
+      }
+      .product-image {
+          width: 200px;
       }
   </style>
 </head>
@@ -43,7 +46,10 @@
       <h3>
         <a th:text="${product.name}" th:href="'#'"></a>
       </h3>
-      <div>Image</div>
+      <div>
+        <img class="product-image" th:if="${product != null}" th:src="@{'/shop/image/' + ${product.id}}" alt="Product Image"/>
+<!--        <img th:if="${product.image == null}" src="/images/default-placeholder.png" alt="No Image Available"/>-->
+      </div>
       <div>
         Описание:
         <p th:text="${product.description}"/>

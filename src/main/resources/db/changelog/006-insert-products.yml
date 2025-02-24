@@ -16,8 +16,8 @@ databaseChangeLog:
                   name: price
                   value: 199.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 1
 
   - changeSet:
       id: insert-product-02
@@ -36,8 +36,8 @@ databaseChangeLog:
                   name: price
                   value: 189.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 2
   - changeSet:
       id: insert-product-03
       author: hedg-r52
@@ -55,8 +55,8 @@ databaseChangeLog:
                   name: price
                   value: 179.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 3
   - changeSet:
       id: insert-product-04
       author: hedg-r52
@@ -74,8 +74,8 @@ databaseChangeLog:
                   name: price
                   value: 169.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 4
   - changeSet:
       id: insert-product-05
       author: hedg-r52
@@ -93,8 +93,8 @@ databaseChangeLog:
                   name: price
                   value: 159.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 5
   - changeSet:
       id: insert-product-06
       author: hedg-r52
@@ -112,8 +112,8 @@ databaseChangeLog:
                   name: price
                   value: 149.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 6
   - changeSet:
       id: insert-product-07
       author: hedg-r52
@@ -131,8 +131,8 @@ databaseChangeLog:
                   name: price
                   value: 139.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 7
   - changeSet:
       id: insert-product-08
       author: hedg-r52
@@ -150,8 +150,8 @@ databaseChangeLog:
                   name: price
                   value: 129.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 8
   - changeSet:
       id: insert-product-09
       author: hedg-r52
@@ -169,8 +169,8 @@ databaseChangeLog:
                   name: price
                   value: 119.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 9
   - changeSet:
       id: insert-product-10
       author: hedg-r52
@@ -188,8 +188,8 @@ databaseChangeLog:
                   name: price
                   value: 109.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 10
   - changeSet:
       id: insert-product-11
       author: hedg-r52
@@ -207,5 +207,5 @@ databaseChangeLog:
                   name: price
                   value: 99.99
               - column:
-                  name: image
-                  value: null
+                  name: image_id
+                  value: 11

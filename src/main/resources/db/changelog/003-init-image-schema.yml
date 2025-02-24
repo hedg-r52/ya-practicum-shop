@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: create_image_sequence
+      author: hedg-r52
+      preConditions:
+        - not:
+            - sequenceExists:
+                sequenceName: image_sequence
+      changes:
+        - createSequence:
+            sequenceName: image_sequence
+            incrementBy: 1
+      rollback:
+        - dropSequence:
+            sequenceName: image_sequence
+  - changeSet:
+      id: create_table_images
+      author: hedg-r52
+      changes:
+        - createTable:
+            catalogName: shop
+            schemaName: public
+            tableName: images
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  valueSequenceNext: image_sequence
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: image_data
+                  type: bytea
+                  constraints:
+                    nullable: false
