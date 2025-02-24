@@ -14,3 +14,4 @@ spring:
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-master.yml
     default-schema: public
+    enabled: true

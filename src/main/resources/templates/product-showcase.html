@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Internet Shop</title>
+  <style>
+      .products-wrapper {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+          align-items: flex-start;
+          gap: 9px;
+      }
+
+      .product-card {
+          align-self: auto;
+          height: 300px;
+          width: 200px;
+          border: dimgray 1px dashed;
+          border-radius: 5px;
+          padding: 10px;
+      }
+  </style>
+</head>
+<body>
+<h1>Витрина товаров:</h1>
+<div>
+  <div class="toolbar">
+    <span>Список или плитка</span>
+    <span>Пагинация 10 20 50 100</span>
+    <span>Фильтрация</span>
+    <span>Сортировка по алфавиту и по цене</span>
+
+    <span>Заказы</span>
+    <span>Корзина</span>
+  </div>
+  <div class="products-wrapper">
+    <div class="product-card" th:each="product : ${products}">
+      <h3>
+        <a th:text="${product.name}" th:href="'#'"></a>
+      </h3>
+      <div>Image</div>
+      <div>
+        Описание:
+        <p th:text="${product.description}"/>
+      </div>
+      <div>
+        Цена:
+        <span th:text="${product.price}"/>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

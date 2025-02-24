@@ -8,3 +8,6 @@ databaseChangeLog:
   - include:
       file: 003-init-product-schema.yml
       relativeToChangelogFile: true
+  - include:
+      file: 004-insert-products.yml
+      relativeToChangelogFile: true
