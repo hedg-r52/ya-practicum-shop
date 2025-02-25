@@ -30,12 +30,14 @@ public class ProductController {
     public String productList(
             Model model,
             @RequestParam("page") Optional<Integer> page,
-            @RequestParam("size") Optional<Integer> size) {
+            @RequestParam("size") Optional<Integer> size,
+            @RequestParam(value = "view", defaultValue = "grid") String view) {
         int currentPage = page.orElse(1);
         int pageSize = size.orElse(DEFAULT_PAGE_SIZE);
 
         Page<ProductDto> products = productService.findAll(PageRequest.of(currentPage - 1, pageSize));
         model.addAttribute("products", products);
+        model.addAttribute("view", view);
 
         int totalPages = products.getTotalPages();
         if (totalPages > 0) {
