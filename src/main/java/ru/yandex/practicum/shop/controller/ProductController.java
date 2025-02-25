@@ -2,6 +2,7 @@ package ru.yandex.practicum.shop.controller;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -32,21 +33,25 @@ public class ProductController {
             Model model,
             @RequestParam("page") Optional<Integer> page,
             @RequestParam("size") Optional<Integer> size,
+            @RequestParam(value = "sortBy", defaultValue = "alphabet_asc") String sortBy,
             @RequestParam(value = "view", defaultValue = "grid") String view,
             @RequestParam("search") Optional<String> search) {
         int currentPage = page.orElse(1);
         int pageSize = size.orElse(DEFAULT_PAGE_SIZE);
         String searchString = search.orElse("");
 
+        Sort sort = getSortByString(sortBy);
+
         Page<ProductDto> products;
         if (StringUtils.hasText(searchString)) {
-            products = productService.findAllByNameContainingIgnoreCase(searchString, PageRequest.of(currentPage - 1, pageSize));
+            products = productService.findAllByNameContainingIgnoreCase(searchString, PageRequest.of(currentPage - 1, pageSize, sort));
         } else {
-            products = productService.findAll(PageRequest.of(currentPage - 1, pageSize));
+            products = productService.findAll(PageRequest.of(currentPage - 1, pageSize, sort));
         }
         model.addAttribute("products", products);
         model.addAttribute("view", view);
         model.addAttribute("search", searchString);
+        model.addAttribute("sortBy", sortBy);
 
         int totalPages = products.getTotalPages();
         if (totalPages > 0) {
@@ -54,5 +59,15 @@ public class ProductController {
             model.addAttribute("pageNumbers", pageNumbers);
         }
         return "product-showcase";
+    }
+
+    private Sort getSortByString(String sortString) {
+        return switch (sortString) {
+            case "alphabet_asc" -> Sort.by("name").ascending();
+            case "alphabet_desc" -> Sort.by("name").descending();
+            case "price_asc" -> Sort.by("price").ascending();
+            case "price_desc" -> Sort.by("price").descending();
+            default -> Sort.unsorted();
+        };
     }
 }

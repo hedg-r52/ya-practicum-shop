@@ -135,7 +135,6 @@
           text-decoration: underline;
       }
   </style>
-  </style>
 </head>
 <body>
 <h1>Витрина товаров:</h1>
@@ -155,10 +154,10 @@
     <div class="sort-select">
       <label for="sortBy">Сортировать по:</label>
       <select id="sortBy">
-        <option value="price_asc">Цене(по возр.)</option>
-        <option value="price_desc">Цене(по убыв.)</option>
-        <option value="alphabet_asc">Алфавиту(A-Z)</option>
-        <option value="alphabet_desc">Алфавиту(Z-A)</option>
+        <option th:selected="${sortBy == 'alphabet_asc'}" value="alphabet_asc">Алфавиту(A-Z)</option>
+        <option th:selected="${sortBy == 'alphabet_desc'}" value="alphabet_desc">Алфавиту(Z-A)</option>
+        <option th:selected="${sortBy == 'price_asc'}" value="price_asc">Цене(по возр.)</option>
+        <option th:selected="${sortBy == 'price_desc'}" value="price_desc">Цене(по убыв.)</option>
       </select>
     </div>
     <div class="navigation-links">
@@ -216,7 +215,6 @@
 
     document.getElementById('filterButton').addEventListener('click', function () {
         const filterValue = document.getElementById('filterInput').value.trim();
-        console.log('Фильтровать по:', filterValue);
         const url = new URL(window.location.href);
         if (filterValue) {
             url.searchParams.set('search', filterValue);
@@ -225,6 +223,13 @@
         }
         window.location.href = url.toString();
     });
+
+    document.getElementById('sortBy').addEventListener('change', function () {
+        const sortBy = document.getElementById('sortBy').value.trim();
+        const url = new URL(window.location.href);
+        url.searchParams.set('sortBy', sortBy);
+        window.location.href = url.toString();
+    })
 
     document.getElementById('clearFilterButton').addEventListener('click', function () {
         const url = new URL(window.location.href);
