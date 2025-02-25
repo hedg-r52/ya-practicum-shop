@@ -53,25 +53,135 @@
           width: 100px;
           margin-right: 10px;
       }
+
+      .page-size-selector {
+          border-radius: 5px;
+          padding: 5px;
+          margin: 5px 0;
+          background-color: #3498db;
+          font-size: 14px;
+          font-weight: bold;
+          color: white;
+          text-decoration: none;
+      }
+
+      .page-size-selector.active {
+          background-color: orangered;
+      }
+
+      .toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px;
+          background-color: #f8f8f8;
+          border-radius: 10px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+      }
+
+      .toolbar > div {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin: 5px;
+      }
+
+      .view-toggle button {
+          padding: 8px 12px;
+          border: 1px solid #ccc;
+          background-color: white;
+          border-radius: 5px;
+          cursor: pointer;
+      }
+
+      .view-toggle button:hover {
+          background-color: #e0e0e0;
+      }
+
+      .pagination-select select, .sort-select select {
+          padding: 6px;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+      }
+
+      .filter-block input {
+          padding: 6px 10px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+      }
+
+      .filter-block button {
+          padding: 6px 12px;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+      }
+
+      .filter-block button:hover {
+          background-color: #0056b3;
+      }
+
+      .navigation-links a {
+          text-decoration: none;
+          color: #007bff;
+          padding: 6px 12px;
+      }
+
+      .navigation-links a:hover {
+          text-decoration: underline;
+      }
+  </style>
   </style>
 </head>
 <body>
 <h1>Витрина товаров:</h1>
 <div>
   <div class="toolbar">
-    <div class="view-switch">
+    <div class="view-toggle">
       <button onclick="switchView('grid')">Плитка</button>
       <button onclick="switchView('list')">Список</button>
     </div>
 
-    <span>Пагинация 10 20 50 100</span>
-    <span>Фильтрация</span>
-    <span>Сортировка по алфавиту и по цене</span>
+    <div class="filter-block">
+      <input th:value="${search}" type="text" id="filterInput" placeholder="Фильтр по названию..." />
+      <button id="filterButton">Поиск</button>
+      <button id="clearFilterButton">Очистить</button>
+    </div>
 
-    <span>Заказы</span>
-    <span>Корзина</span>
+    <div class="sort-select">
+      <label for="sortBy">Сортировать по:</label>
+      <select id="sortBy">
+        <option value="price_asc">Цене(по возр.)</option>
+        <option value="price_desc">Цене(по убыв.)</option>
+        <option value="alphabet_asc">Алфавиту(A-Z)</option>
+        <option value="alphabet_desc">Алфавиту(Z-A)</option>
+      </select>
+    </div>
+    <div class="navigation-links">
+      <a href="#">Заказы</a>
+      <a href="#">Корзина</a>
+    </div>
+  </div>
+  <div class="pagination-select">
+    Page size:
+    <a th:href="@{/shop/product(size=10, page=1)}" th:class="${products.size == 10 ? 'active page-size-selector' : 'page-size-selector'}">10</a>
+    <a th:href="@{/shop/product(size=20, page=1)}" th:class="${products.size == 20 ? 'active page-size-selector' : 'page-size-selector'}">20</a>
+    <a th:href="@{/shop/product(size=50, page=1)}" th:class="${products.size == 50 ? 'active page-size-selector' : 'page-size-selector'}">50</a>
+    <a th:href="@{/shop/product(size=100, page=1)}" th:class="${products.size == 100 ? 'active page-size-selector' : 'page-size-selector'}">100</a>
+
+    <strong style="margin: 10px">Pages: </strong>
+    <span th:if="${products.totalPages > 0}" class="pagination" th:each="pageNumber : ${#numbers.sequence(1, pageNumbers)}">
+          <a th:href="@{/shop/product(size=${products.size}, page=${pageNumber})}"
+             th:text="${pageNumber}"
+             th:class="${pageNumber==products.number + 1} ? active"></a>
+      </span>
   </div>
   <div id="products" class="grid-view">
+
     <div class="product-card" th:each="product : ${products}"
          th:class="'product-card ' + (${view} == 'list' ? 'list-view' : 'grid-view')">
       <div>
@@ -103,6 +213,24 @@
         }
 
     })
+
+    document.getElementById('filterButton').addEventListener('click', function () {
+        const filterValue = document.getElementById('filterInput').value.trim();
+        console.log('Фильтровать по:', filterValue);
+        const url = new URL(window.location.href);
+        if (filterValue) {
+            url.searchParams.set('search', filterValue);
+        } else {
+            url.searchParams.delete('search');
+        }
+        window.location.href = url.toString();
+    });
+
+    document.getElementById('clearFilterButton').addEventListener('click', function () {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('search');
+        window.location.href = url.toString();
+    });
 </script>
 </body>
 </html>

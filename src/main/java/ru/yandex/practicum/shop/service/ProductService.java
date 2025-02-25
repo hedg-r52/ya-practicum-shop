@@ -10,5 +10,7 @@ public interface ProductService {
 
     Page<ProductDto> findAll(Pageable pageable);
 
+    Page<ProductDto> findAllByNameContainingIgnoreCase(String searchString, Pageable pageable);
+
     Optional<ProductDto> getProductById(Long id);
 }

@@ -27,6 +27,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Page<ProductDto> findAllByNameContainingIgnoreCase(String searchString, Pageable pageable) {
+        return productRepository.findAllByNameContainingIgnoreCase(searchString, pageable).map(productMapper::toProductDto);
+    }
+
+    @Override
     public Optional<ProductDto> getProductById(Long id) {
         return productRepository.findById(id).map(productMapper::toProductDto);
     }

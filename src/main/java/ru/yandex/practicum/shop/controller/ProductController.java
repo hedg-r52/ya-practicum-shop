@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,13 +32,21 @@ public class ProductController {
             Model model,
             @RequestParam("page") Optional<Integer> page,
             @RequestParam("size") Optional<Integer> size,
-            @RequestParam(value = "view", defaultValue = "grid") String view) {
+            @RequestParam(value = "view", defaultValue = "grid") String view,
+            @RequestParam("search") Optional<String> search) {
         int currentPage = page.orElse(1);
         int pageSize = size.orElse(DEFAULT_PAGE_SIZE);
+        String searchString = search.orElse("");
 
-        Page<ProductDto> products = productService.findAll(PageRequest.of(currentPage - 1, pageSize));
+        Page<ProductDto> products;
+        if (StringUtils.hasText(searchString)) {
+            products = productService.findAllByNameContainingIgnoreCase(searchString, PageRequest.of(currentPage - 1, pageSize));
+        } else {
+            products = productService.findAll(PageRequest.of(currentPage - 1, pageSize));
+        }
         model.addAttribute("products", products);
         model.addAttribute("view", view);
+        model.addAttribute("search", searchString);
 
         int totalPages = products.getTotalPages();
         if (totalPages > 0) {
