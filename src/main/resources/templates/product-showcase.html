@@ -134,6 +134,48 @@
       .navigation-links a:hover {
           text-decoration: underline;
       }
+
+      .action-buttons {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 10px;
+          gap: 5px;
+      }
+
+      .btn-add, .btn-remove, .btn-plus, .btn-minus {
+          background-color: #00bbff;
+          border: none;
+          color: white;
+          padding: 3px 5px;
+          border-radius: 5px;
+          cursor: pointer;
+      }
+
+      .btn-remove {
+          background-color: #f4949d;
+      }
+
+      .btn-plus, .btn-minus {
+          background-color: #bbffcb;
+          padding: 3px 6px;
+      }
+
+      .btn-add:hover, .btn-remove:hover, .btn-plus:hover, .btn-minus:hover {
+          opacity: 0.8;
+      }
+
+      .quantity-control {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+      }
+
+      .quantity-control span {
+          min-width: 20px;
+          text-align: center;
+          font-weight: bold;
+      }
   </style>
 </head>
 <body>
@@ -191,6 +233,17 @@
         <div style="display: block;"><h3 th:text="${product.name}">Название товара</h3></div>
         <div><p th:text="${product.description}">Описание товара</p></div>
         <div><span th:text="'Цена: ' + ${product.price} + ' ₽'">Цена</span></div>
+        <div class="action-buttons">
+          <button class="btn-add" th:if="${!product.inCart}" th:attr="onclick='addToCart(' + ${product.id} +')'">В корзину</button>
+
+          <div class="quantity-control" th:if="${product.inCart}">
+            <button class="btn-minus" th:onclick="updateQuantity(${product.id}, -1)">➖</button>
+            <span th:text="${product.quantity}">1</span>
+            <button class="btn-plus" th:onclick="updateQuantity(${product.id}, 1)">➕</button>
+          </div>
+
+          <button class="btn-remove" th:if="${product.inCart}" th:onclick="removeFromCart(${product.id})">❌</button>
+        </div>
       </div>
     </div>
   </div>
@@ -236,6 +289,25 @@
         url.searchParams.delete('search');
         window.location.href = url.toString();
     });
+
+    function addToCart(productId) {
+        console.log('addToCart:', productId);
+        fetch(`/cart/add/${productId}`, {
+            method: 'POST'
+        }).then(() => window.location.reload());
+    }
+
+    function updateQuantity(productId, change) {
+        fetch(`/cart/update/${productId}?change=${change}`, {
+            method: 'POST'
+        }).then(() => window.location.reload());
+    }
+
+    function removeFromCart(productId) {
+        fetch(`/cart/remove/${productId}`, {
+            method: 'DELETE'
+        }).then(() => window.location.reload());
+    }
 </script>
 </body>
 </html>

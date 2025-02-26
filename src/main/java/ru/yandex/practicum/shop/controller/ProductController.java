@@ -10,10 +10,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.yandex.practicum.shop.dto.ProductDto;
+import ru.yandex.practicum.shop.entity.OrderItem;
+import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.ProductService;
 import ru.yandex.practicum.shop.service.impl.ProductServiceImpl;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Controller
@@ -23,9 +27,11 @@ public class ProductController {
     private static final int DEFAULT_PAGE_SIZE = 10;
 
     private final ProductService productService;
+    private final OrderService orderService;
 
-    public ProductController(ProductServiceImpl productService) {
+    public ProductController(ProductServiceImpl productService, OrderService orderService) {
         this.productService = productService;
+        this.orderService = orderService;
     }
 
     @GetMapping
@@ -48,6 +54,18 @@ public class ProductController {
         } else {
             products = productService.findAll(PageRequest.of(currentPage - 1, pageSize, sort));
         }
+
+        orderService.findLastActiveOrder().ifPresent(order -> {
+            Map<Long, Integer> productIdQuantityMap = order.getItems().stream().collect(
+                    Collectors.toMap(
+                            item -> item.getProduct().getId(),
+                            OrderItem::getQuantity,
+                            Integer::sum
+                    )
+            );
+            enrichProductDtoList(products, productIdQuantityMap);
+        });
+
         model.addAttribute("products", products);
         model.addAttribute("view", view);
         model.addAttribute("search", searchString);
@@ -59,6 +77,15 @@ public class ProductController {
             model.addAttribute("pageNumbers", pageNumbers);
         }
         return "product-showcase";
+    }
+
+    private void enrichProductDtoList(Page<ProductDto> products, Map<Long, Integer> productMap) {
+        products.forEach(productDto -> {
+            if (productMap.containsKey(productDto.getId())) {
+                productDto.setInCart(true);
+                productDto.setQuantity(productMap.get(productDto.getId()));
+            }
+        });
     }
 
     private Sort getSortByString(String sortString) {

@@ -14,4 +14,6 @@ public class ProductDto {
     String name;
     Float price;
     String description;
+    boolean inCart;
+    Integer quantity;
 }

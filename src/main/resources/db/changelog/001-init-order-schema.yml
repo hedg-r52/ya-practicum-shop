@@ -28,7 +28,7 @@ databaseChangeLog:
                     primaryKey: true
               - column:
                   name: status
-                  type: int
+                  type: varchar
                   constraints:
                     nullable: false
               - column:
