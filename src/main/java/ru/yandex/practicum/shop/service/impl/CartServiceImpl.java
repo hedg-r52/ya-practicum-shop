@@ -12,7 +12,6 @@ import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.CartService;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 @Service
 public class CartServiceImpl implements CartService {
@@ -30,7 +29,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public void addProduct(Long productId) {
-        Optional<Order> orderOptional = orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
+        var orderOptional = orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
         Order order;
         if (orderOptional.isEmpty()) {
             order = Order.builder()
@@ -47,8 +46,8 @@ public class CartServiceImpl implements CartService {
                 throw new IllegalArgumentException("Продукт с ID " + productId + " уже добавлен в заказ");
             }
         }
-        Product product = productRepository.findById(productId).orElseThrow();
-        OrderItem orderItem = OrderItem.builder()
+        var product = productRepository.findById(productId).orElseThrow();
+        var orderItem = OrderItem.builder()
                 .product(product)
                 .order(order)
                 .quantity(1)
@@ -56,7 +55,6 @@ public class CartServiceImpl implements CartService {
 
         orderRepository.save(order);
         orderItemRepository.save(orderItem);
-
     }
 
     @Override
@@ -66,11 +64,24 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public void updateQuantity(Long productId, Integer quantity) {
-
+        // update quantity implementation expected
     }
 
+    @Transactional
     @Override
     public void removeProduct(Long productId) {
+        var orderOptional = orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
+        var order = orderOptional.orElseThrow(
+                () -> new IllegalArgumentException("Нет активного заказа. Невозможно что-либо удалить")
+        );
+        var orderItem = order.getItems().stream()
+                .filter(oi -> productId.equals(oi.getProduct().getId()))
+                .findFirst()
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Не найдена позиция товара в заказе.")
+                );
+        order.getItems().remove(orderItem);
+
 
     }
 }

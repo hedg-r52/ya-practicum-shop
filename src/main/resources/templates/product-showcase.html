@@ -242,7 +242,7 @@
             <button class="btn-plus" th:onclick="updateQuantity(${product.id}, 1)">➕</button>
           </div>
 
-          <button class="btn-remove" th:if="${product.inCart}" th:onclick="removeFromCart(${product.id})">❌</button>
+          <button class="btn-remove" th:if="${product.inCart}" th:attr="onclick='removeFromCart(' +${product.id} + ')'">❌</button>
         </div>
       </div>
     </div>
@@ -305,7 +305,7 @@
 
     function removeFromCart(productId) {
         fetch(`/cart/remove/${productId}`, {
-            method: 'DELETE'
+            method: 'POST'
         }).then(() => window.location.reload());
     }
 </script>
