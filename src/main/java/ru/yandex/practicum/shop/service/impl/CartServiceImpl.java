@@ -62,9 +62,26 @@ public class CartServiceImpl implements CartService {
         return 0;
     }
 
+    @Transactional
     @Override
-    public void updateQuantity(Long productId, Integer quantity) {
-        // update quantity implementation expected
+    public void updateQuantity(Long productId, Integer delta) {
+        var orderOptional = orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
+        var order = orderOptional.orElseThrow(
+                () -> new IllegalArgumentException("Нет активного заказа. Невозможно что-либо удалить")
+        );
+        var orderItem = order.getItems().stream()
+                .filter(oi -> productId.equals(oi.getProduct().getId()))
+                .findFirst()
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Не найдена позиция товара в заказе.")
+                );
+        int newQuantity = orderItem.getQuantity() + delta;
+        if (newQuantity == 0) {
+            order.getItems().remove(orderItem);
+        } else {
+            orderItem.setQuantity(newQuantity);
+            orderItemRepository.save(orderItem);
+        }
     }
 
     @Transactional
@@ -81,7 +98,5 @@ public class CartServiceImpl implements CartService {
                         () -> new IllegalArgumentException("Не найдена позиция товара в заказе.")
                 );
         order.getItems().remove(orderItem);
-
-
     }
 }

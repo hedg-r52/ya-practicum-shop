@@ -16,6 +16,7 @@ import java.util.Map;
 public class CartController {
 
     private final CartService cartService;
+    private static final String SUCCESS = "success";
 
     public CartController(CartService cartService) {
         this.cartService = cartService;
@@ -25,15 +26,15 @@ public class CartController {
     public ResponseEntity<Map<String, Object>> addToCart(@PathVariable Long productId) {
         cartService.addProduct(productId);
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
+        response.put(SUCCESS, true);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/update/{productId}")
-    public ResponseEntity<Map<String, Object>> updateQuantity(@PathVariable Long productId, @RequestParam int quantity) {
+    public ResponseEntity<Map<String, Object>> updateQuantity(@PathVariable Long productId, @RequestParam("change") int quantity) {
         cartService.updateQuantity(productId, quantity);
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
+        response.put(SUCCESS, true);
         response.put("quantity", cartService.getProductQuantity(productId));
         return ResponseEntity.ok(response);
     }
@@ -42,7 +43,7 @@ public class CartController {
     public ResponseEntity<Map<String, Object>> removeFromCart(@PathVariable Long productId) {
         cartService.removeProduct(productId);
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
+        response.put(SUCCESS, true);
         return ResponseEntity.ok(response);
     }
 
