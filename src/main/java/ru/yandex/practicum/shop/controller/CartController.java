@@ -12,6 +12,7 @@ import ru.yandex.practicum.shop.entity.Order;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.OrderService;
+import ru.yandex.practicum.shop.util.OrderUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class CartController {
         var cart = cartOptional.orElse(new Order());
 
         if (cartOptional.isPresent()) {
-            var total = getTotal(cart);
+            var total = OrderUtil.getTotal(cart);
             model.addAttribute("total", String.format("%.2f", total));
         }
         model.addAttribute("cart", cart);
@@ -49,7 +50,7 @@ public class CartController {
         var order = orderService.findByIdAndStatus(orderId, OrderStatus.CHECKOUT).orElseThrow(
                 () -> new IllegalArgumentException("Заказ с id = " + orderId + " не найден")
         );
-        var total = getTotal(order);
+        var total = OrderUtil.getTotal(order);
         model.addAttribute("order", order);
         model.addAttribute("total", String.format("%.2f", total));
         return "checkout";
@@ -64,7 +65,7 @@ public class CartController {
     @PostMapping("/purchase/{orderId}")
     public String confirmPurchase(@PathVariable Long orderId) {
         cartService.confirmPurchase(orderId);
-        return "redirect:/orders";
+        return "redirect:/order/summary/" + orderId;
     }
 
     @PostMapping("/add/{productId}")
@@ -92,11 +93,6 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
 
-    private static Float getTotal(Order order) {
-        return order.getItems().stream()
-                .map(oi -> oi.getQuantity() * oi.getProduct().getPrice())
-                .reduce(Float::sum)
-                .orElse(0.0f);
-    }
+
 
 }
