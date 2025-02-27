@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.yandex.practicum.shop.dto.ProductDto;
@@ -77,6 +78,22 @@ public class ProductController {
             model.addAttribute("pageNumbers", pageNumbers);
         }
         return "product-showcase";
+    }
+
+    @GetMapping("/{productId}")
+    public String productCard(Model model, @PathVariable Long productId) {
+        var product = productService.getProductById(productId).orElseThrow(
+                () -> new IllegalArgumentException("Продукт с id = " + productId + " не найден.")
+        );
+        orderService.findLastActiveOrder()
+                .flatMap(order -> order.getItems().stream()
+                        .filter(oi -> productId.equals(oi.getProduct().getId()))
+                        .findFirst()).ifPresent(oi -> {
+                    product.setQuantity(oi.getQuantity());
+                    product.setInCart(true);
+                });
+        model.addAttribute("product", product);
+        return "product";
     }
 
     private void enrichProductDtoList(Page<ProductDto> products, Map<Long, Integer> productMap) {

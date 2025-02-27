@@ -230,7 +230,11 @@
              alt="Изображение товара"/>
       </div>
       <div>
-        <div style="display: block;"><h3 th:text="${product.name}">Название товара</h3></div>
+        <div style="display: block;">
+          <a th:href="'/shop/product/' + ${product.id}">
+            <h3 th:text="${product.name}">Название товара</h3>
+          </a>
+        </div>
         <div><p th:text="${product.description}">Описание товара</p></div>
         <div><span th:text="'Цена: ' + ${product.price} + ' ₽'">Цена</span></div>
         <div class="action-buttons">
