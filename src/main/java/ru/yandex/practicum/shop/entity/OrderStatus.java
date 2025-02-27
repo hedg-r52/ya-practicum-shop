@@ -2,7 +2,7 @@ package ru.yandex.practicum.shop.entity;
 
 public enum OrderStatus {
     ACTIVE,
-    PLACED,
+    CHECKOUT,
     PAID,
     FINISHED
 }

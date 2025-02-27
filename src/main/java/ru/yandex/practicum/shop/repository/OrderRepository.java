@@ -12,4 +12,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findFirstByStatusOrderByCreatedAtDesc(OrderStatus status);
 
+    Optional<Order> findByIdAndStatus(Long id, OrderStatus status);
 }

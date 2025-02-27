@@ -12,6 +12,7 @@ import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.CartService;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class CartServiceImpl implements CartService {
@@ -24,6 +25,11 @@ public class CartServiceImpl implements CartService {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.productRepository = productRepository;
+    }
+
+    @Override
+    public Optional<Order> getCart() {
+        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
     }
 
     @Transactional
@@ -67,7 +73,7 @@ public class CartServiceImpl implements CartService {
     public void updateQuantity(Long productId, Integer delta) {
         var orderOptional = orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
         var order = orderOptional.orElseThrow(
-                () -> new IllegalArgumentException("Нет активного заказа. Невозможно что-либо удалить")
+                () -> new IllegalArgumentException("Нет активного заказа. Невозможно изменить количество")
         );
         var orderItem = order.getItems().stream()
                 .filter(oi -> productId.equals(oi.getProduct().getId()))
@@ -98,5 +104,23 @@ public class CartServiceImpl implements CartService {
                         () -> new IllegalArgumentException("Не найдена позиция товара в заказе.")
                 );
         order.getItems().remove(orderItem);
+    }
+
+    @Override
+    public void moveCartToCheckout(Long orderId) {
+        var order = orderRepository.findById(orderId).orElseThrow(
+                () -> new IllegalArgumentException("Нет активного заказа. Невозможно оформить заказ")
+        );
+        order.setStatus(OrderStatus.CHECKOUT);
+        orderRepository.save(order);
+    }
+
+    @Override
+    public void confirmPurchase(Long orderId) {
+        var order = orderRepository.findById(orderId).orElseThrow(
+                () -> new IllegalArgumentException("Нет активного заказа. Невозможно подтвердить оплату заказа")
+        );
+        order.setStatus(OrderStatus.PAID);
+        orderRepository.save(order);
     }
 }

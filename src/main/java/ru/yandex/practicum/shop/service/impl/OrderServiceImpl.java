@@ -21,4 +21,9 @@ public class OrderServiceImpl implements OrderService {
     public Optional<Order> findLastActiveOrder() {
         return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
     }
+
+    @Override
+    public Optional<Order> findByIdAndStatus(Long id, OrderStatus status) {
+        return orderRepository.findByIdAndStatus(id, status);
+    }
 }
