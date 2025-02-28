@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: create_table_images
+      author: hedg-r52
+      changes:
+        - createTable:
+            catalogName: shop
+            schemaName: public
+            tableName: images
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: image_data
+                  type: bytea
+                  constraints:
+                    nullable: false

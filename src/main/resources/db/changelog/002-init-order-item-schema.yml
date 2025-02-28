@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: create_table_order_items
+      author: hedg-r52
+      changes:
+        - createTable:
+            catalogName: shop
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: order_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: int
+            tableName: order_items
+            schemaName: public

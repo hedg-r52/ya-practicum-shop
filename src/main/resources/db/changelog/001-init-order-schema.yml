@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: create_table_orders
+      author: hedg-r52
+      changes:
+        - createTable:
+            catalogName: shop
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: status
+                  type: varchar
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: date
+                  constraints:
+                    nullable: false
+            tableName: orders
+            schemaName: public
+      rollback:
+        - dropTable:
+            tableName: orders

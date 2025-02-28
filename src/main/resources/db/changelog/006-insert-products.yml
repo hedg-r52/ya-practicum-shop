@@ -1,0 +1,211 @@
+databaseChangeLog:
+  - changeSet:
+      id: insert-product-01
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 01'
+              - column:
+                  name: description
+                  value: 'Description of Product 01'
+              - column:
+                  name: price
+                  value: 199.99
+              - column:
+                  name: image_id
+                  value: 1
+
+  - changeSet:
+      id: insert-product-02
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 02'
+              - column:
+                  name: description
+                  value: 'Description of Product 02'
+              - column:
+                  name: price
+                  value: 189.99
+              - column:
+                  name: image_id
+                  value: 2
+  - changeSet:
+      id: insert-product-03
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 03'
+              - column:
+                  name: description
+                  value: 'Description of Product 03'
+              - column:
+                  name: price
+                  value: 179.99
+              - column:
+                  name: image_id
+                  value: 3
+  - changeSet:
+      id: insert-product-04
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 04'
+              - column:
+                  name: description
+                  value: 'Description of Product 04'
+              - column:
+                  name: price
+                  value: 169.99
+              - column:
+                  name: image_id
+                  value: 4
+  - changeSet:
+      id: insert-product-05
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 05'
+              - column:
+                  name: description
+                  value: 'Description of Product 05'
+              - column:
+                  name: price
+                  value: 159.99
+              - column:
+                  name: image_id
+                  value: 5
+  - changeSet:
+      id: insert-product-06
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 06'
+              - column:
+                  name: description
+                  value: 'Description of Product 06'
+              - column:
+                  name: price
+                  value: 149.99
+              - column:
+                  name: image_id
+                  value: 6
+  - changeSet:
+      id: insert-product-07
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 07'
+              - column:
+                  name: description
+                  value: 'Description of Product 07'
+              - column:
+                  name: price
+                  value: 139.99
+              - column:
+                  name: image_id
+                  value: 7
+  - changeSet:
+      id: insert-product-08
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 08'
+              - column:
+                  name: description
+                  value: 'Description of Product 08'
+              - column:
+                  name: price
+                  value: 129.99
+              - column:
+                  name: image_id
+                  value: 8
+  - changeSet:
+      id: insert-product-09
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 09'
+              - column:
+                  name: description
+                  value: 'Description of Product 09'
+              - column:
+                  name: price
+                  value: 119.99
+              - column:
+                  name: image_id
+                  value: 9
+  - changeSet:
+      id: insert-product-10
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 10'
+              - column:
+                  name: description
+                  value: 'Description of Product 10'
+              - column:
+                  name: price
+                  value: 109.99
+              - column:
+                  name: image_id
+                  value: 10
+  - changeSet:
+      id: insert-product-11
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: products
+            columns:
+              - column:
+                  name: name
+                  value: 'Product 11'
+              - column:
+                  name: description
+                  value: 'Description of Product 11'
+              - column:
+                  name: price
+                  value: 99.99
+              - column:
+                  name: image_id
+                  value: 11

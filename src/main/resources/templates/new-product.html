@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Internet Shop / Product</title>
+</head>
+<body>
+<div class="wrapper">
+  <h2>Добавление продукта: </h2>
+  <!--/*@thymesVar id="product" type="ru.yandex.practicum.shop.dto.ProductDto"*/-->
+  <form th:action="@{/shop/product/add}" method="post" th:object="${product}" enctype="multipart/form-data">
+    <table>
+      <tr>
+        <td><label for="name">Наименование: </label></td>
+        <td><input class="input-field" type="text" th:field="*{name}" id="name"></td>
+      </tr>
+      <tr>
+        <td><label for="image">Изображение: </label></td>
+        <td><input class="input-field" type="file" name="imageFile" id="image" accept=".jpeg, .jpg, image/jpeg"></td>
+      </tr>
+      <tr>
+        <td><label for="description">Описание: </label></td>
+        <td><input class="input-field" type="text" th:field="*{description}" id="description"></td>
+      </tr>
+      <tr>
+        <td><label for="price">Цена: </label></td>
+        <td><input class="input-field" type="text" th:field="*{price}" id="price"></td>
+      </tr>
+    </table>
+    <button class="add-button" type="submit">Добавить</button>
+  </form>
+</div>
+</body>
