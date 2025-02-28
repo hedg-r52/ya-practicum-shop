@@ -7,11 +7,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.OrderItem;
+import ru.yandex.practicum.shop.entity.Product;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.ProductService;
 import ru.yandex.practicum.shop.service.impl.ProductServiceImpl;
@@ -94,6 +98,19 @@ public class ProductController {
                 });
         model.addAttribute("product", product);
         return "product";
+    }
+
+    @GetMapping("/add")
+    public String addNewProductPage(Model model) {
+        model.addAttribute("product", new Product());
+        return "new-product";
+    }
+
+    @PostMapping("/add")
+    public String addProduct(@ModelAttribute("product") ProductDto productDto,
+                             @RequestParam("imageFile") MultipartFile file) {
+        productService.saveProductWithImage(productDto, file);
+        return "redirect:/shop/product";
     }
 
     private void enrichProductDtoList(Page<ProductDto> products, Map<Long, Integer> productMap) {

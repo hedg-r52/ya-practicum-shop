@@ -1,19 +1,5 @@
 databaseChangeLog:
   - changeSet:
-      id: create_product_sequence
-      author: hedg-r52
-      preConditions:
-        - not:
-            - sequenceExists:
-                sequenceName: product_sequence
-      changes:
-        - createSequence:
-            sequenceName: product_sequence
-            incrementBy: 1
-      rollback:
-        - dropSequence:
-            sequenceName: product_sequence
-  - changeSet:
       id: create_table_products
       author: hedg-r52
       changes:
@@ -26,7 +12,6 @@ databaseChangeLog:
                   name: id
                   type: bigint
                   autoIncrement: true
-                  valueSequenceNext: product_sequence
                   constraints:
                     primaryKey: true
               - column:

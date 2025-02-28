@@ -1,19 +1,5 @@
 databaseChangeLog:
   - changeSet:
-      id: create_order_sequence
-      author: hedg-r52
-      preConditions:
-        - not:
-            - sequenceExists:
-                sequenceName: order_sequence
-      changes:
-        - createSequence:
-            sequenceName: order_sequence
-            incrementBy: 1
-      rollback:
-        - dropSequence:
-            sequenceName: order_sequence
-  - changeSet:
       id: create_table_orders
       author: hedg-r52
       changes:
