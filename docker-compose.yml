@@ -1,6 +1,18 @@
 version: '3'
 
 services:
+  app:
+    build: .
+    container_name: shop-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shop
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+
   postgres:
     image: postgres:17-alpine
     restart: always
