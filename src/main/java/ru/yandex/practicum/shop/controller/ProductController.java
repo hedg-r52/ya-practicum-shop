@@ -34,7 +34,7 @@ public class ProductController {
     private final ProductService productService;
     private final OrderService orderService;
 
-    public ProductController(ProductServiceImpl productService, OrderService orderService) {
+    public ProductController(ProductService productService, OrderService orderService) {
         this.productService = productService;
         this.orderService = orderService;
     }

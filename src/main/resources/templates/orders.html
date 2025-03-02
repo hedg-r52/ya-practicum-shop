@@ -152,7 +152,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr th:each="order : ${orders}">
+        <tr class="order-row" th:each="order : ${orders}">
 
           <td th:if="${order.status.name.equals('PAID')}"><a th:href="@{/order/summary/{id}(id=${order.id})}" th:text="${order.id}"></a></td>
           <td th:if="${order.status.name.equals('CHECKOUT')}"><a th:href="@{/cart/checkout/{id}(id=${order.id})}" th:text="${order.id}"></a></td>
