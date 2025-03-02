@@ -63,11 +63,6 @@ public class CartServiceImpl implements CartService {
         orderItemRepository.save(orderItem);
     }
 
-    @Override
-    public Integer getProductQuantity(Long productId) {
-        return 0;
-    }
-
     @Transactional
     @Override
     public void updateQuantity(Long productId, Integer delta) {

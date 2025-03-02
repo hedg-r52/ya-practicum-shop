@@ -81,7 +81,6 @@ public class CartController {
         cartService.updateQuantity(productId, quantity);
         Map<String, Object> response = new HashMap<>();
         response.put(SUCCESS, true);
-        response.put("quantity", cartService.getProductQuantity(productId));
         return ResponseEntity.ok(response);
     }
 
@@ -92,7 +91,5 @@ public class CartController {
         response.put(SUCCESS, true);
         return ResponseEntity.ok(response);
     }
-
-
 
 }

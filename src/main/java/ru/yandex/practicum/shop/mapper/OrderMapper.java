@@ -9,8 +9,10 @@ import ru.yandex.practicum.shop.entity.Order;
 public interface OrderMapper {
 
     @Mapping(target = "totalPrice", expression = "java(calculateTotalPrice(order))")
+    @Mapping(source = "items", target = "orderItems")
     OrderDto toOrderDto(Order order);
 
+    @Mapping(source = "orderItems", target = "items")
     Order toOrder(OrderDto orderDto);
 
     default Float calculateTotalPrice(Order order) {

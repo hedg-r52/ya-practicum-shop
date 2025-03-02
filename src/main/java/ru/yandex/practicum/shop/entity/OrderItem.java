@@ -36,9 +36,4 @@ public class OrderItem {
 
     private Integer quantity;
 
-    public Float getTotalPrice() {
-        return product.getPrice() * this.quantity;
-    }
-
 }
-
