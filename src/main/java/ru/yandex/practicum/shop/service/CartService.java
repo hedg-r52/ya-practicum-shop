@@ -1,20 +1,20 @@
 package ru.yandex.practicum.shop.service;
 
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.entity.Order;
 
-import java.util.Optional;
 
 public interface CartService {
 
-    Optional<Order> getCart();
+    Mono<Order> getCart();
 
-    void addProduct(Long productId);
+    Mono<Void> addProduct(Long productId);
 
-    void updateQuantity(Long productId, Integer quantity);
+    Mono<Void> updateQuantity(Long productId, Integer quantity);
 
-    void removeProduct(Long productId);
+    Mono<Void> removeProduct(Long productId);
 
-    void moveCartToCheckout(Long orderId);
+    Mono<Void> moveCartToCheckout(Long orderId);
 
-    void confirmPurchase(Long orderId);
+    Mono<Void> confirmPurchase(Long orderId);
 }

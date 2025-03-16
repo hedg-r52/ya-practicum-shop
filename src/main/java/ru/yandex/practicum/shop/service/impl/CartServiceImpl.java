@@ -2,6 +2,7 @@ package ru.yandex.practicum.shop.service.impl;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.entity.Order;
 import ru.yandex.practicum.shop.entity.OrderItem;
 import ru.yandex.practicum.shop.entity.OrderStatus;
@@ -28,94 +29,97 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public Optional<Order> getCart() {
+    public Mono<Order> getCart() {
         return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
     }
 
     @Transactional
     @Override
-    public void addProduct(Long productId) {
-        var orderOptional = orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
-        Order order;
-        if (orderOptional.isEmpty()) {
-            order = Order.builder()
-                    .status(OrderStatus.ACTIVE)
-                    .createdAt(LocalDate.now())
-                    .build();
-        } else {
-            order = orderOptional.get();
-            var productExists = order.getItems().stream()
-                    .map(OrderItem::getProduct)
-                    .map(Product::getId)
-                    .anyMatch(id -> id.equals(productId));
-            if (productExists) {
-                throw new IllegalArgumentException("Продукт с ID " + productId + " уже добавлен в заказ");
-            }
-        }
-        var product = productRepository.findById(productId).orElseThrow();
-        var orderItem = OrderItem.builder()
-                .product(product)
-                .order(order)
-                .quantity(1)
-                .build();
+    public Mono<Void> addProduct(Long productId) {
+        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                .flatMap(order -> {
+                    var productExists = order.getItems().stream()
+                            .map(OrderItem::getProduct)
+                            .map(Product::getId)
+                            .anyMatch(id -> id.equals(productId));
+                    if (productExists) {
+                        return Mono.error(new IllegalArgumentException("Продукт с ID " + productId + " уже добавлен в заказ"));
+                    }
 
-        orderRepository.save(order);
-        orderItemRepository.save(orderItem);
+                    return productRepository.findById(productId)
+                            .flatMap(product -> {
+                                var orderItem = OrderItem.builder()
+                                        .product(product)
+                                        .order(order)
+                                        .quantity(1)
+                                        .build();
+
+                                order.getItems().add(orderItem);
+                                return orderRepository.save(order)
+                                        .then(orderItemRepository.save(orderItem));
+                            });
+                })
+                .then();
     }
 
     @Transactional
     @Override
-    public void updateQuantity(Long productId, Integer delta) {
-        var orderOptional = orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
-        var order = orderOptional.orElseThrow(
-                () -> new IllegalArgumentException("Нет активного заказа. Невозможно изменить количество")
-        );
-        var orderItem = order.getItems().stream()
-                .filter(oi -> productId.equals(oi.getProduct().getId()))
-                .findFirst()
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Не найдена позиция товара в заказе.")
-                );
-        int newQuantity = orderItem.getQuantity() + delta;
-        if (newQuantity == 0) {
-            order.getItems().remove(orderItem);
-        } else {
-            orderItem.setQuantity(newQuantity);
-            orderItemRepository.save(orderItem);
-        }
+    public Mono<Void> updateQuantity(Long productId, Integer delta) {
+        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                .flatMap(order -> {
+                    var orderItem = order.getItems().stream()
+                            .filter(oi -> productId.equals(oi.getProduct().getId()))
+                            .findFirst()
+                            .orElseThrow(() -> new IllegalArgumentException("Не найдена позиция товара в заказе."));
+
+                    int newQuantity = orderItem.getQuantity() + delta;
+                    if (newQuantity == 0) {
+                        order.getItems().remove(orderItem);
+                        return orderRepository.save(order);
+                    } else {
+                        orderItem.setQuantity(newQuantity);
+                        return orderItemRepository.save(orderItem)
+                                .then(orderRepository.save(order));
+                    }
+                })
+                .then();
     }
 
     @Transactional
     @Override
-    public void removeProduct(Long productId) {
-        var orderOptional = orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
-        var order = orderOptional.orElseThrow(
-                () -> new IllegalArgumentException("Нет активного заказа. Невозможно что-либо удалить")
-        );
-        var orderItem = order.getItems().stream()
-                .filter(oi -> productId.equals(oi.getProduct().getId()))
-                .findFirst()
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Не найдена позиция товара в заказе.")
-                );
-        order.getItems().remove(orderItem);
+    public Mono<Void> removeProduct(Long productId) {
+        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                .flatMap(order -> {
+                    var orderItem = order.getItems().stream()
+                            .filter(oi -> productId.equals(oi.getProduct().getId()))
+                            .findFirst()
+                            .orElseThrow(() -> new IllegalArgumentException("Не найдена позиция товара в заказе."));
+
+                    order.getItems().remove(orderItem);
+                    return orderRepository.save(order);
+                })
+                .then();
     }
 
     @Override
-    public void moveCartToCheckout(Long orderId) {
-        var order = orderRepository.findById(orderId).orElseThrow(
-                () -> new IllegalArgumentException("Нет активного заказа. Невозможно оформить заказ")
-        );
-        order.setStatus(OrderStatus.CHECKOUT);
-        orderRepository.save(order);
+    public Mono<Void> moveCartToCheckout(Long orderId) {
+        return orderRepository.findById(orderId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Нет активного заказа. Невозможно оформить заказ")))
+                .flatMap(order -> {
+                    order.setStatus(OrderStatus.CHECKOUT);
+                    return orderRepository.save(order);
+                })
+                .then();
     }
 
     @Override
-    public void confirmPurchase(Long orderId) {
-        var order = orderRepository.findById(orderId).orElseThrow(
-                () -> new IllegalArgumentException("Нет активного заказа. Невозможно подтвердить оплату заказа")
-        );
-        order.setStatus(OrderStatus.PAID);
-        orderRepository.save(order);
+    public Mono<Void> confirmPurchase(Long orderId) {
+        return orderRepository.findById(orderId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Нет активного заказа. Невозможно подтвердить оплату заказа")))
+                .flatMap(order -> {
+                    order.setStatus(OrderStatus.PAID);
+                    return orderRepository.save(order); // Асинхронное сохранение заказа с новым статусом
+                })
+                .then();
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.service.ImageService;
 
 @Controller
@@ -20,12 +21,12 @@ public class ImageController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<byte[]> getImage(@PathVariable Long id) {
+    public Mono<ResponseEntity<byte[]>> getImage(@PathVariable Long id) {
         return imageService.getImageById(id)
                 .map(image -> ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"image.jpg\"")
                         .contentType(MediaType.IMAGE_JPEG)  // Можно менять на PNG, GIF и т.д.
                         .body(image.getImageData()))
-                .orElse(ResponseEntity.notFound().build());
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
     }
 }

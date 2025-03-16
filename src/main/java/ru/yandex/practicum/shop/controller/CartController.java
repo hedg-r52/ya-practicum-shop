@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.entity.Order;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.CartService;
@@ -31,62 +32,63 @@ public class CartController {
     }
 
     @GetMapping
-    public String cart(Model model) {
-        var cartOptional = cartService.getCart();
-        model.addAttribute("empty", cartOptional.isEmpty());
-        var cart = cartOptional.orElse(new Order());
-
-        if (cartOptional.isPresent()) {
-            var total = OrderUtil.getTotal(cart);
-            model.addAttribute("total", String.format("%.2f", total));
-        }
-        model.addAttribute("cart", cart);
-
-        return "cart";
+    public Mono<String> cart(Model model) {
+        return cartService.getCart()
+                .doOnNext(cart -> {
+                    var cartEmpty = cart == null;
+                    model.addAttribute("empty", cartEmpty);
+                    if (!cartEmpty) {
+                        var total = OrderUtil.getTotal(cart);
+                        model.addAttribute("total", String.format("%.2f", total));
+                    }
+                    model.addAttribute("cart", cartEmpty ? new Order() : cart);
+                })
+                .thenReturn("cart");
     }
 
     @GetMapping("/checkout/{orderId}")
-    public String checkoutPage(Model model, @PathVariable Long orderId) {
-        var order = orderService.findByIdAndStatus(orderId, OrderStatus.CHECKOUT).orElseThrow(
-                () -> new IllegalArgumentException("Заказ с id = " + orderId + " не найден")
-        );
-        var total = OrderUtil.getTotal(order);
-        model.addAttribute("order", order);
-        model.addAttribute("total", String.format("%.2f", total));
-        return "checkout";
+    public Mono<String> checkoutPage(Model model, @PathVariable Long orderId) {
+        return orderService.findByIdAndStatus(orderId, OrderStatus.CHECKOUT)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Заказ с id = " + orderId + " не найден")))
+                .doOnNext(order -> {
+                    var total = OrderUtil.getTotal(order);
+                    model.addAttribute("order", order);
+                    model.addAttribute("total", String.format("%.2f", total));
+                })
+                .thenReturn("checkout");
     }
 
     @PostMapping("/checkout/{orderId}")
-    public String moveOrderToCheckoutStage(@PathVariable Long orderId) {
-        cartService.moveCartToCheckout(orderId);
-        return "redirect:/cart/checkout/" + orderId;
+    public Mono<String> moveOrderToCheckoutStage(@PathVariable Long orderId) {
+        return cartService.moveCartToCheckout(orderId)
+                .thenReturn("redirect:/cart/checkout/" + orderId);
     }
 
     @PostMapping("/purchase/{orderId}")
-    public String confirmPurchase(@PathVariable Long orderId) {
-        cartService.confirmPurchase(orderId);
-        return "redirect:/order/summary/" + orderId;
+    public Mono<String> confirmPurchase(@PathVariable Long orderId) {
+        return cartService.confirmPurchase(orderId)
+                .thenReturn("redirect:/order/summary/" + orderId);
     }
 
     @PostMapping("/add/{productId}")
-    public ResponseEntity<Map<String, Object>> addToCart(@PathVariable Long productId) {
-        cartService.addProduct(productId);
-        Map<String, Object> response = new HashMap<>();
-        response.put(SUCCESS, true);
-        return ResponseEntity.ok(response);
+    public Mono<ResponseEntity<Map<String, Object>>> addToCart(@PathVariable Long productId) {
+        return cartService.addProduct(productId)
+                .thenReturn(createSuccessResponse());
     }
 
     @PostMapping("/update/{productId}")
-    public ResponseEntity<Map<String, Object>> updateQuantity(@PathVariable Long productId, @RequestParam("change") int quantity) {
-        cartService.updateQuantity(productId, quantity);
-        Map<String, Object> response = new HashMap<>();
-        response.put(SUCCESS, true);
-        return ResponseEntity.ok(response);
+    public Mono<ResponseEntity<Map<String, Object>>> updateQuantity(@PathVariable Long productId, @RequestParam("change") int quantity) {
+        return cartService.updateQuantity(productId, quantity)
+                .thenReturn(createSuccessResponse());
     }
 
     @PostMapping("/remove/{productId}")
-    public ResponseEntity<Map<String, Object>> removeFromCart(@PathVariable Long productId) {
-        cartService.removeProduct(productId);
+    public Mono<ResponseEntity<Map<String, Object>>> removeFromCart(@PathVariable Long productId) {
+        return cartService.removeProduct(productId)
+                .thenReturn(createSuccessResponse());
+    }
+
+    private ResponseEntity<Map<String, Object>> createSuccessResponse() {
         Map<String, Object> response = new HashMap<>();
         response.put(SUCCESS, true);
         return ResponseEntity.ok(response);

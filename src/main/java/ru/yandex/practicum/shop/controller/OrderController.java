@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.dto.OrderDto;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.OrderService;
@@ -28,31 +29,36 @@ public class OrderController {
     }
 
     @GetMapping
-    public String orders(Model model,
-                         @RequestParam("page") Optional<Integer> page,
-                         @RequestParam("size") Optional<Integer> size) {
+    public Mono<String> orders(Model model,
+                              @RequestParam("page") Optional<Integer> page,
+                              @RequestParam("size") Optional<Integer> size) {
         int currentPage = page.orElse(1);
         int pageSize = size.orElse(DEFAULT_ORDER_PAGE_SIZE);
-        Page<OrderDto> orders = orderService.findAll(PageRequest.of(currentPage - 1, pageSize));
-        model.addAttribute("orders", orders);
 
-        int totalPages = orders.getTotalPages();
-        if (totalPages > 0) {
-            long pageNumbers = IntStream.rangeClosed(1, totalPages).count();
-            model.addAttribute("pageNumbers", pageNumbers);
-        }
+        return orderService.findAll(PageRequest.of(currentPage - 1, pageSize))
+                .doOnNext(orders -> {
+                    model.addAttribute("orders", orders);
 
-        return "orders";
+                    int totalPages = orders.getTotalPages();
+                    if (totalPages > 0) {
+                        long pageNumbers = IntStream.rangeClosed(1, totalPages).count();
+                        model.addAttribute("pageNumbers", pageNumbers);
+                    }
+                })
+                .thenReturn("orders");
+
+
     }
 
     @GetMapping("/summary/{id}")
-    public String summary(Model model, @PathVariable("id") Long orderId) {
-        var order = orderService.findByIdAndStatus(orderId, OrderStatus.PAID).orElseThrow(
-                () -> new IllegalArgumentException("Заказ с id = " + orderId + " не найден или не завершен")
-        );
-        var total = OrderUtil.getTotal(order);
-        model.addAttribute("order", order);
-        model.addAttribute("total", String.format("%.2f", total));
-        return "summary";
+    public Mono<String> summary(Model model, @PathVariable("id") Long orderId) {
+        return orderService.findByIdAndStatus(orderId, OrderStatus.PAID)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Заказ с id = " + orderId + " не найден или не завершен")))
+                .doOnNext(order -> {
+                    var total = OrderUtil.getTotal(order);
+                    model.addAttribute("order", order);
+                    model.addAttribute("total", String.format("%.2f", total));
+                })
+                .thenReturn("summary");
     }
 }
