@@ -2,10 +2,11 @@ package ru.yandex.practicum.shop.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.entity.Image;
 import ru.yandex.practicum.shop.service.ImageService;
 
@@ -14,20 +15,16 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Optional;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ImageController.class)
+@WebFluxTest(ImageController.class)
 class ImageControllerTest {
 
     @Autowired
-    MockMvc mockMvc;
+    WebTestClient webTestClient;
 
     @MockitoBean
     ImageService imageService;
@@ -37,15 +34,19 @@ class ImageControllerTest {
         when(imageService.getImageById(1L))
                 .thenReturn(getTestImage());
 
-        mockMvc.perform(get("/shop/image/{id}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.IMAGE_JPEG));
+        webTestClient.get()
+                .uri(builder ->
+                        builder
+                                .path("/shop/image/{id}")
+                                .build(1L))
+                .exchange().expectStatus().isOk()
+                .expectHeader().contentType(MediaType.IMAGE_JPEG);
 
         verify(imageService, times(1)).getImageById(1L);
 
     }
 
-    private Optional<Image> getTestImage() throws IOException {
+    private Mono<Image> getTestImage() throws IOException {
         // Создаем маленькое изображение 10x10 пикселей
         BufferedImage img = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
@@ -60,6 +61,6 @@ class ImageControllerTest {
         Image image = new Image();
         image.setImageData(baos.toByteArray());
 
-        return Optional.of(image);
+        return Mono.just(image);
     }
 }

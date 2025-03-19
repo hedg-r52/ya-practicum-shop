@@ -2,25 +2,19 @@ package ru.yandex.practicum.shop.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.Image;
 import ru.yandex.practicum.shop.entity.Product;
-import ru.yandex.practicum.shop.exception.ImageLoadFileException;
 import ru.yandex.practicum.shop.mapper.ProductMapper;
 import ru.yandex.practicum.shop.repository.ImageRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.ProductService;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -54,14 +48,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Mono<Void> saveProductWithImage(ProductDto productDto, MultipartFile file) {
-        return DataBufferUtils.join(DataBufferUtils.readInputStream(() -> {
-                    try {
-                        return file.getInputStream();
-                    } catch (IOException e) {
-                        throw new ImageLoadFileException("Ошибка загрузки файла: " + file.getName());
-                    }
-                }, new DefaultDataBufferFactory(), 4096))
+    public Mono<Void> saveProductWithImage(ProductDto productDto, FilePart file) {
+        return DataBufferUtils.join(file.content()) // Собираем весь файл в один DataBuffer
                 .map(dataBuffer -> {
                     byte[] bytes = new byte[dataBuffer.readableByteCount()];
                     dataBuffer.read(bytes);
@@ -81,8 +69,4 @@ public class ProductServiceImpl implements ProductService {
                 .then();
     }
 
-    public Mono<Map<Long, Float>> getProductPriceMap(List<Long> productIds) {
-        return productRepository.findAllById(productIds)
-                .collectMap(Product::getId, Product::getPrice);
-    }
 }

@@ -3,6 +3,7 @@ package ru.yandex.practicum.shop.controller;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestPart;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.dto.OrderItemDto;
@@ -115,7 +116,7 @@ public class ProductController {
 
     @PostMapping("/add")
     public Mono<String> addProduct(@ModelAttribute("product") ProductDto productDto,
-                             @RequestParam("imageFile") Mono<MultipartFile> fileMono) {
+                             @RequestPart("imageFile") Mono<FilePart> fileMono) {
         return fileMono.flatMap(file -> productService.saveProductWithImage(productDto, file))
                 .thenReturn("redirect:/shop/product");
     }

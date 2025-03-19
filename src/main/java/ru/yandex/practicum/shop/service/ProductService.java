@@ -2,12 +2,9 @@ package ru.yandex.practicum.shop.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.dto.ProductDto;
-
-import java.util.List;
-import java.util.Map;
 
 public interface ProductService {
 
@@ -17,7 +14,5 @@ public interface ProductService {
 
     Mono<ProductDto> getProductById(Long id);
 
-    Mono<Void> saveProductWithImage(ProductDto productDto, MultipartFile file);
-
-    Mono<Map<Long, Float>> getProductPriceMap(List<Long> productIds);
+    Mono<Void> saveProductWithImage(ProductDto productDto, FilePart file);
 }
