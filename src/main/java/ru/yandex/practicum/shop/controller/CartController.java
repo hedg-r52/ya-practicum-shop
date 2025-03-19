@@ -13,7 +13,6 @@ import ru.yandex.practicum.shop.entity.Order;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.OrderService;
-import ru.yandex.practicum.shop.util.OrderUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,11 +34,10 @@ public class CartController {
     public Mono<String> cart(Model model) {
         return cartService.getCart()
                 .doOnNext(cart -> {
-                    var cartEmpty = cart == null;
+                    var cartEmpty = cart == null || cart.getOrderItems().isEmpty();
                     model.addAttribute("empty", cartEmpty);
                     if (!cartEmpty) {
-                        var total = OrderUtil.getTotal(cart);
-                        model.addAttribute("total", String.format("%.2f", total));
+                        model.addAttribute("total", String.format("%.2f", cart.getTotalPrice()));
                     }
                     model.addAttribute("cart", cartEmpty ? new Order() : cart);
                 })
@@ -51,9 +49,8 @@ public class CartController {
         return orderService.findByIdAndStatus(orderId, OrderStatus.CHECKOUT)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Заказ с id = " + orderId + " не найден")))
                 .doOnNext(order -> {
-                    var total = OrderUtil.getTotal(order);
                     model.addAttribute("order", order);
-                    model.addAttribute("total", String.format("%.2f", total));
+                    model.addAttribute("total", String.format("%.2f", order.getTotalPrice()));
                 })
                 .thenReturn("checkout");
     }

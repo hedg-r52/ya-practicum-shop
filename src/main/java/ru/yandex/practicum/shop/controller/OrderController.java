@@ -1,6 +1,5 @@
 package ru.yandex.practicum.shop.controller;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,10 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Mono;
-import ru.yandex.practicum.shop.dto.OrderDto;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.OrderService;
-import ru.yandex.practicum.shop.util.OrderUtil;
 
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -55,9 +52,8 @@ public class OrderController {
         return orderService.findByIdAndStatus(orderId, OrderStatus.PAID)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Заказ с id = " + orderId + " не найден или не завершен")))
                 .doOnNext(order -> {
-                    var total = OrderUtil.getTotal(order);
                     model.addAttribute("order", order);
-                    model.addAttribute("total", String.format("%.2f", total));
+                    model.addAttribute("total", String.format("%.2f", order.getTotalPrice()));
                 })
                 .thenReturn("summary");
     }

@@ -156,6 +156,7 @@
 
           <td th:if="${order.status.name.equals('PAID')}"><a th:href="@{/order/summary/{id}(id=${order.id})}" th:text="${order.id}"></a></td>
           <td th:if="${order.status.name.equals('CHECKOUT')}"><a th:href="@{/cart/checkout/{id}(id=${order.id})}" th:text="${order.id}"></a></td>
+          <td th:if="${order.status.name.equals('ACTIVE')}"><a th:href="@{/cart}" th:text="${order.id}"></a></td>
           <td th:text="${order.totalPrice}"></td>
           <td th:text="${order.status}"></td>
           <td th:text="${order.createdAt}"></td>

@@ -25,7 +25,7 @@ public class ImageController {
         return imageService.getImageById(id)
                 .map(image -> ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"image.jpg\"")
-                        .contentType(MediaType.IMAGE_JPEG)  // Можно менять на PNG, GIF и т.д.
+                        .contentType(MediaType.IMAGE_JPEG)
                         .body(image.getImageData()))
                 .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
     }

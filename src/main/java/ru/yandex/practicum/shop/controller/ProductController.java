@@ -15,9 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import ru.yandex.practicum.shop.dto.OrderItemDto;
 import ru.yandex.practicum.shop.dto.ProductDto;
-import ru.yandex.practicum.shop.entity.OrderItem;
-import ru.yandex.practicum.shop.entity.Product;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.ProductService;
 
@@ -66,10 +65,10 @@ public class ProductController {
 
         return orderService.findLastActiveOrder()
                 .flatMap(order -> {
-                    Map<Long, Integer> productIdQuantityMap = order.getItems().stream()
+                    Map<Long, Integer> productIdQuantityMap = order.getOrderItems().stream()
                             .collect(Collectors.toMap(
-                                    item -> item.getProduct().getId(),
-                                    OrderItem::getQuantity,
+                                    OrderItemDto::getProductId,
+                                    OrderItemDto::getQuantity,
                                     Integer::sum
                             ));
                     return products.doOnNext(productList -> enrichProductDtoList(productList, productIdQuantityMap));
@@ -94,23 +93,23 @@ public class ProductController {
         return productService.getProductById(productId)
                 .switchIfEmpty(Mono.error(new IllegalStateException("Продукт с id = " + productId + " не найден.")))
                 .flatMap(product -> orderService.findLastActiveOrder()
-                        .flatMap(order -> Flux.fromIterable(order.getItems())
-                                .filter(oi -> productId.equals(oi.getProduct().getId()))
+                        .flatMap(order -> Flux.fromIterable(order.getOrderItems())
+                                .filter(oi -> productId.equals(oi.getProductId()))
                                 .next()
-                        )
-                        .doOnNext(oi -> {
-                            product.setQuantity(oi.getQuantity());
-                            product.setInCart(true);
-                        })
+                                .doOnNext(oi -> {
+                                    product.setQuantity(oi.getQuantity());
+                                    product.setInCart(true);
+                                }))
                         .thenReturn(product)
                 )
+                .switchIfEmpty(Mono.defer(() -> productService.getProductById(productId)))
                 .doOnNext(product -> model.addAttribute(PRODUCT_ATTR, product))
                 .thenReturn(PRODUCT_VIEW);
     }
 
     @GetMapping("/add")
     public Mono<String> addNewProductPage(Model model) {
-        return Mono.fromRunnable(() -> model.addAttribute(PRODUCT_ATTR, new Product()))
+        return Mono.fromRunnable(() -> model.addAttribute(PRODUCT_ATTR, new ProductDto()))
                 .thenReturn("new-product");
     }
 
@@ -126,6 +125,9 @@ public class ProductController {
             if (productMap.containsKey(productDto.getId())) {
                 productDto.setInCart(true);
                 productDto.setQuantity(productMap.get(productDto.getId()));
+            } else {
+                productDto.setInCart(false);
+                productDto.setQuantity(0);
             }
         });
     }

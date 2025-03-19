@@ -7,8 +7,6 @@ import ru.yandex.practicum.shop.exception.ImageNotFoundException;
 import ru.yandex.practicum.shop.repository.ImageRepository;
 import ru.yandex.practicum.shop.service.ImageService;
 
-import java.util.Optional;
-
 @Service
 public class ImageServiceImpl implements ImageService {
 

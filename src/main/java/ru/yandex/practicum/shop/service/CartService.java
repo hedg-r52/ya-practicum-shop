@@ -1,12 +1,11 @@
 package ru.yandex.practicum.shop.service;
 
 import reactor.core.publisher.Mono;
-import ru.yandex.practicum.shop.entity.Order;
-
+import ru.yandex.practicum.shop.dto.OrderDto;
 
 public interface CartService {
 
-    Mono<Order> getCart();
+    Mono<OrderDto> getCart();
 
     Mono<Void> addProduct(Long productId);
 

@@ -1,103 +1,109 @@
 package ru.yandex.practicum.shop.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import ru.yandex.practicum.shop.dto.OrderDto;
+import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.Order;
 import ru.yandex.practicum.shop.entity.OrderItem;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.entity.Product;
+import ru.yandex.practicum.shop.mapper.OrderItemMapper;
 import ru.yandex.practicum.shop.repository.OrderItemRepository;
 import ru.yandex.practicum.shop.repository.OrderRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.CartService;
 
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.List;
+import java.util.Map;
+
+import static ru.yandex.practicum.shop.util.OrderUtil.buildOrderDto;
 
 @Service
+@RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
+
+    public static final String PRODUCT_NOT_FOUND = "Продукт не найден.";
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
-
-    public CartServiceImpl(OrderRepository orderRepository, OrderItemRepository orderItemRepository, ProductRepository productRepository) {
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.productRepository = productRepository;
-    }
+    private final OrderItemMapper orderItemMapper;
 
     @Override
-    public Mono<Order> getCart() {
-        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
+    public Mono<OrderDto> getCart() {
+        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                .switchIfEmpty(Mono.just(new Order()))
+                .flatMap(order -> orderItemRepository.findAllByOrderId(order.getId())
+                        .collectList()
+                        .flatMap(items -> {
+                            List<Long> productIds = items.stream().map(OrderItem::getProductId).toList();
+                            return getProductMap(productIds)
+                                    .map(productMap ->
+                                            buildOrderDto(order, orderItemMapper.map(items), productMap));
+                        })
+                );
     }
 
     @Transactional
     @Override
     public Mono<Void> addProduct(Long productId) {
-        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
-                .flatMap(order -> {
-                    var productExists = order.getItems().stream()
-                            .map(OrderItem::getProduct)
-                            .map(Product::getId)
-                            .anyMatch(id -> id.equals(productId));
-                    if (productExists) {
-                        return Mono.error(new IllegalArgumentException("Продукт с ID " + productId + " уже добавлен в заказ"));
-                    }
-
-                    return productRepository.findById(productId)
-                            .flatMap(product -> {
-                                var orderItem = OrderItem.builder()
-                                        .product(product)
-                                        .order(order)
-                                        .quantity(1)
-                                        .build();
-
-                                order.getItems().add(orderItem);
-                                return orderRepository.save(order)
-                                        .then(orderItemRepository.save(orderItem));
-                            });
-                })
+        return productRepository.findById(productId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException(PRODUCT_NOT_FOUND)))
+                .flatMap(product -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                        .switchIfEmpty(createNewActiveOrder())
+                        .flatMap(order -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
+                                .flatMap(orderItem ->
+                                        Mono.error(new IllegalArgumentException(
+                                                "Продукт с ID " + productId + " уже добавлен в заказ"
+                                        ))
+                                )
+                                .switchIfEmpty(Mono.defer(() -> {
+                                    OrderItem orderItem = new OrderItem();
+                                    orderItem.setOrderId(order.getId());
+                                    orderItem.setProductId(productId);
+                                    orderItem.setQuantity(1);
+                                    return orderItemRepository.save(orderItem);
+                                }))
+                        )
+                )
                 .then();
     }
 
     @Transactional
     @Override
     public Mono<Void> updateQuantity(Long productId, Integer delta) {
-        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
-                .flatMap(order -> {
-                    var orderItem = order.getItems().stream()
-                            .filter(oi -> productId.equals(oi.getProduct().getId()))
-                            .findFirst()
-                            .orElseThrow(() -> new IllegalArgumentException("Не найдена позиция товара в заказе."));
-
-                    int newQuantity = orderItem.getQuantity() + delta;
-                    if (newQuantity == 0) {
-                        order.getItems().remove(orderItem);
-                        return orderRepository.save(order);
-                    } else {
-                        orderItem.setQuantity(newQuantity);
-                        return orderItemRepository.save(orderItem)
-                                .then(orderRepository.save(order));
-                    }
-                })
+        return productRepository.findById(productId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException(PRODUCT_NOT_FOUND)))
+                .flatMap(product -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                        .flatMap(order -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
+                                .flatMap(orderItem -> {
+                                    int newQuantity = orderItem.getQuantity() + delta;
+                                    if (newQuantity == 0) {
+                                        return orderItemRepository.delete(orderItem);
+                                    } else {
+                                        orderItem.setQuantity(newQuantity);
+                                        return orderItemRepository.save(orderItem);
+                                    }
+                                })
+                        )
+                )
                 .then();
     }
 
     @Transactional
     @Override
     public Mono<Void> removeProduct(Long productId) {
-        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
-                .flatMap(order -> {
-                    var orderItem = order.getItems().stream()
-                            .filter(oi -> productId.equals(oi.getProduct().getId()))
-                            .findFirst()
-                            .orElseThrow(() -> new IllegalArgumentException("Не найдена позиция товара в заказе."));
-
-                    order.getItems().remove(orderItem);
-                    return orderRepository.save(order);
-                })
+        return productRepository.findById(productId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException(PRODUCT_NOT_FOUND)))
+                .flatMap(product -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                        .flatMap(order -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
+                                .flatMap(orderItemRepository::delete)
+                        )
+                )
                 .then();
     }
 
@@ -118,8 +124,27 @@ public class CartServiceImpl implements CartService {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Нет активного заказа. Невозможно подтвердить оплату заказа")))
                 .flatMap(order -> {
                     order.setStatus(OrderStatus.PAID);
-                    return orderRepository.save(order); // Асинхронное сохранение заказа с новым статусом
+                    return orderRepository.save(order);
                 })
                 .then();
+    }
+
+    private Mono<Order> createNewActiveOrder() {
+        Order newOrder = new Order();
+        newOrder.setStatus(OrderStatus.ACTIVE);
+        newOrder.setCreatedAt(LocalDate.now());
+        return orderRepository.save(newOrder);
+    }
+
+    private Mono<Map<Long, ProductDto>> getProductMap(List<Long> productIds) {
+        return productRepository.findAllById(productIds)
+                .collectMap(
+                        Product::getId,
+                        product -> ProductDto.builder()
+                                .id(product.getId())
+                                .name(product.getName())
+                                .price(product.getPrice())
+                                .build()
+                );
     }
 }
