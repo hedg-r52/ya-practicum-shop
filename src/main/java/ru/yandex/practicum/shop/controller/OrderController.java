@@ -1,6 +1,7 @@
 package ru.yandex.practicum.shop.controller;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,7 +33,10 @@ public class OrderController {
         int currentPage = page.orElse(1);
         int pageSize = size.orElse(DEFAULT_ORDER_PAGE_SIZE);
 
-        return orderService.findAll(PageRequest.of(currentPage - 1, pageSize))
+        return orderService.findAll(PageRequest.of(
+                currentPage - 1,
+                        pageSize,
+                        Sort.by("created_at").ascending().and(Sort.by("id").ascending())))
                 .doOnNext(orders -> {
                     model.addAttribute("orders", orders);
 

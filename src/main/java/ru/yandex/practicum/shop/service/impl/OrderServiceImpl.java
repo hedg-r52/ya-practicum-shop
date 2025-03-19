@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.dto.OrderDto;
@@ -95,7 +96,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private Mono<List<OrderItemDto>> findOrderItemsByOrderId(Long orderId) {
-        return orderItemRepository.findAllByOrderId(orderId)
+        return orderItemRepository.findAllByOrderId(
+                    orderId,
+                    Sort.by("id").ascending()
+                )
                 .collectList()
                 .map(orderItemMapper::map);
     }

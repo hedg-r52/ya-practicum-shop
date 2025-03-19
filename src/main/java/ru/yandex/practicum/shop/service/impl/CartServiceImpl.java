@@ -1,6 +1,7 @@
 package ru.yandex.practicum.shop.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -37,14 +38,17 @@ public class CartServiceImpl implements CartService {
     public Mono<OrderDto> getCart() {
         return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
                 .switchIfEmpty(Mono.just(new Order()))
-                .flatMap(order -> orderItemRepository.findAllByOrderId(order.getId())
-                        .collectList()
-                        .flatMap(items -> {
-                            List<Long> productIds = items.stream().map(OrderItem::getProductId).toList();
-                            return getProductMap(productIds)
-                                    .map(productMap ->
-                                            buildOrderDto(order, orderItemMapper.map(items), productMap));
-                        })
+                .flatMap(order -> orderItemRepository.findAllByOrderId(
+                                        order.getId(),
+                                        Sort.by("id").ascending()
+                                )
+                                .collectList()
+                                .flatMap(items -> {
+                                    List<Long> productIds = items.stream().map(OrderItem::getProductId).toList();
+                                    return getProductMap(productIds)
+                                            .map(productMap ->
+                                                    buildOrderDto(order, orderItemMapper.map(items), productMap));
+                                })
                 );
     }
 
