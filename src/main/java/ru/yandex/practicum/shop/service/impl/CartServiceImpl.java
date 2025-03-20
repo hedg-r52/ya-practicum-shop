@@ -11,6 +11,7 @@ import ru.yandex.practicum.shop.entity.Order;
 import ru.yandex.practicum.shop.entity.OrderItem;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.entity.Product;
+import ru.yandex.practicum.shop.exception.ResourceNotFoundException;
 import ru.yandex.practicum.shop.mapper.OrderItemMapper;
 import ru.yandex.practicum.shop.repository.OrderItemRepository;
 import ru.yandex.practicum.shop.repository.OrderRepository;
@@ -101,14 +102,13 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public Mono<Void> removeProduct(Long productId) {
-        return productRepository.findById(productId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException(PRODUCT_NOT_FOUND)))
-                .flatMap(product -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
-                        .flatMap(order -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
+        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Активный заказ не найден")))
+                .flatMap(order -> productRepository.findById(productId)
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Продукт не найден")))
+                        .flatMap(product -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
                                 .flatMap(orderItemRepository::delete)
-                        )
-                )
-                .then();
+                                .then()));
     }
 
     @Override
@@ -141,6 +141,9 @@ public class CartServiceImpl implements CartService {
     }
 
     private Mono<Map<Long, ProductDto>> getProductMap(List<Long> productIds) {
+        if (productIds.isEmpty()) {
+            return Mono.just(Map.of());
+        }
         return productRepository.findAllById(productIds)
                 .collectMap(
                         Product::getId,
