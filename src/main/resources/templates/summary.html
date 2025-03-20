@@ -128,8 +128,8 @@
       </tr>
       </thead>
       <tbody>
-      <tr th:each="item : ${order.items}">
-        <td><img class="product-image" th:if="${item.product != null}" th:src="@{'/shop/image/' + ${item.product.id}}"
+      <tr th:each="item : ${order.orderItems}">
+        <td><img class="product-image" th:if="${item.productId != null}" th:src="@{'/shop/image/' + ${item.productId}}"
                  alt="Изображение товара"/></td>
         <td th:text="${item.product.name}"></td>
         <td>

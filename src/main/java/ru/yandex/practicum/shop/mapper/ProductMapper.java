@@ -12,6 +12,5 @@ public interface ProductMapper {
     @Mapping(target = "quantity", ignore = true)
     ProductDto toProductDto(Product product);
 
-    @Mapping(target = "image", ignore = true)
     Product toProduct(ProductDto productDto);
 }

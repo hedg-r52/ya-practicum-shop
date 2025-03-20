@@ -1,9 +1,13 @@
 package ru.yandex.practicum.shop.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.Image;
 import ru.yandex.practicum.shop.entity.Product;
@@ -12,50 +16,57 @@ import ru.yandex.practicum.shop.repository.ImageRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.ProductService;
 
-import java.io.IOException;
-import java.util.Optional;
-
 @Service
+@RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final ImageRepository imageRepository;
     private final ProductMapper productMapper;
 
-    public ProductServiceImpl(ProductRepository productRepository,
-                              ImageRepository imageRepository,
-                              ProductMapper productMapper) {
-        this.productRepository = productRepository;
-        this.imageRepository = imageRepository;
-        this.productMapper = productMapper;
+    @Override
+    public Mono<Page<ProductDto>> findAll(Pageable pageable) {
+        return productRepository.findAllBy(pageable)
+                .map(productMapper::toProductDto)
+                .collectList()
+                .zipWith(productRepository.count())
+                .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
     }
 
     @Override
-    public Page<ProductDto> findAll(Pageable pageable) {
-        return productRepository.findAll(pageable).map(productMapper::toProductDto);
+    public Mono<Page<ProductDto>> findAllByNameContainingIgnoreCase(String searchString, Pageable pageable) {
+        return productRepository.findAllByNameContainingIgnoreCase(searchString, pageable)
+                .map(productMapper::toProductDto)
+                .collectList()
+                .zipWith(productRepository.count())
+                .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
     }
 
     @Override
-    public Page<ProductDto> findAllByNameContainingIgnoreCase(String searchString, Pageable pageable) {
-        return productRepository.findAllByNameContainingIgnoreCase(searchString, pageable).map(productMapper::toProductDto);
-    }
-
-    @Override
-    public Optional<ProductDto> getProductById(Long id) {
+    public Mono<ProductDto> getProductById(Long id) {
         return productRepository.findById(id).map(productMapper::toProductDto);
     }
 
     @Override
-    public void saveProductWithImage(ProductDto productDto, MultipartFile file) {
-        try {
-            Image image = new Image();
-            image.setImageData(file.getBytes());
-            Image savedImage = imageRepository.save(image);
-            Product product = productMapper.toProduct(productDto);
-            product.setImage(savedImage);
-            productRepository.save(product);
-        } catch (IOException e) {
-            throw new RuntimeException("Ошибка загрузки файла", e);
-        }
+    public Mono<Void> saveProductWithImage(ProductDto productDto, FilePart file) {
+        return DataBufferUtils.join(file.content()) // Собираем весь файл в один DataBuffer
+                .map(dataBuffer -> {
+                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                    dataBuffer.read(bytes);
+                    DataBufferUtils.release(dataBuffer);
+                    return bytes;
+                })
+                .flatMap(bytes -> {
+                    Image image = new Image();
+                    image.setImageData(bytes);
+                    return imageRepository.save(image);
+                })
+                .flatMap(savedImage -> {
+                    Product product = productMapper.toProduct(productDto);
+                    product.setImageId(savedImage.getId());
+                    return productRepository.save(product);
+                })
+                .then();
     }
+
 }

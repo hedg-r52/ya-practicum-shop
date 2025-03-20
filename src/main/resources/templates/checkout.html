@@ -11,7 +11,7 @@
           width: 100px;
       }
 
-      .order-wrapper {
+      .checkout-wrapper {
           width: 80%;
           margin: auto;
       }
@@ -155,10 +155,10 @@
   <div class="toolbar">
     <div class="navigation-links">
       <a th:href="@{/shop/product}">Витрина товаров</a>
-      <a href="#">Заказы</a>
+      <a th:href="@{/order}">Заказы</a>
     </div>
   </div>
-  <div class="order-wrapper">
+  <div class="checkout-wrapper">
     <table class="table table-striped table-bordered text-center">
       <thead class="table-dark">
       <tr>
@@ -170,8 +170,8 @@
       </tr>
       </thead>
       <tbody>
-      <tr class="cart-row" th:each="item : ${order.items}">
-        <td><img class="product-image" th:if="${item.product != null}" th:src="@{'/shop/image/' + ${item.product.id}}"
+      <tr class="cart-row" th:each="item : ${order.orderItems}">
+        <td><img class="product-image" th:if="${item.productId != null}" th:src="@{'/shop/image/' + ${item.productId}}"
                  alt="Изображение товара"/></td>
         <td th:text="${item.product.name}"></td>
         <td>

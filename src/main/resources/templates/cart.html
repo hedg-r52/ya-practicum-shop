@@ -11,7 +11,7 @@
           width: 100px;
       }
 
-      .order-wrapper {
+      .cart-wrapper {
           width: 80%;
           margin: auto;
       }
@@ -155,7 +155,7 @@
   <div class="toolbar">
     <div class="navigation-links">
       <a th:href="@{/shop/product}">Витрина товаров</a>
-      <a href="#">Заказы</a>
+      <a th:href="@{/order}">Заказы</a>
     </div>
   </div>
   <div class="cart-wrapper">
@@ -171,7 +171,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr class="cart-row" th:each="item : ${cart.items}">
+        <tr class="cart-row" th:each="item : ${cart.orderItems}">
           <td><img class="product-image" th:if="${item.product != null}" th:src="@{'/shop/image/' + ${item.product.id}}"
                    alt="Изображение товара"/></td>
           <td th:text="${item.product.name}"></td>

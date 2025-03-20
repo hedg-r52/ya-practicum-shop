@@ -2,45 +2,44 @@ package ru.yandex.practicum.shop.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.dto.OrderDto;
-import ru.yandex.practicum.shop.entity.Order;
-import ru.yandex.practicum.shop.entity.OrderItem;
+import ru.yandex.practicum.shop.dto.OrderItemDto;
+import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.OrderStatus;
-import ru.yandex.practicum.shop.entity.Product;
 import ru.yandex.practicum.shop.service.OrderService;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-@WebMvcTest(OrderController.class)
+@WebFluxTest(OrderController.class)
 class OrderControllerTest {
 
     @Autowired
-    MockMvc mockMvc;
+    WebTestClient webTestClient;
 
     @MockitoBean
     OrderService orderService;
 
     @Test
-    void whenGetOrders_shouldGetOrderList() throws Exception {
+    void whenGetOrders_shouldGetOrderList() {
         Pageable pageable = PageRequest.of(0, 2);
 
         var order1 = new OrderDto();
@@ -54,41 +53,59 @@ class OrderControllerTest {
 
         Page<OrderDto> orderPage = new PageImpl<>(orders, pageable, orders.size());
 
-        when(orderService.findAll(any(Pageable.class))).thenReturn(orderPage);
+        when(orderService.findAll(any(Pageable.class))).thenReturn(Mono.just(orderPage));
 
-        mockMvc.perform(get("/order")
-                        .param("page", "1")
-                        .param("size", "2"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("orders"))
-                .andExpect(content().string(containsString("order-row")));
+        webTestClient.get()
+                .uri(builder ->
+                        builder
+                                .path("/order")
+                                .queryParam("page", "1")
+                                .queryParam("size", "2")
+                                .build()
+                )
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .consumeWith(response -> {
+                    String body = response.getResponseBody();
+                    assertNotNull(body);
+                    assertTrue(body.contains("<div class=\"orders\">"));
+                });
 
-        verify(orderService, times(1)).findAll(PageRequest.of(0, 2));
+        verify(orderService, times(1))
+                .findAll(PageRequest.of(0, 2, Sort.by("created_at").ascending().and(Sort.by("id").ascending())));
     }
 
     @Test
-    void whenGetSummary_shouldShowSummaryOrderPage() throws Exception {
-        var order = Order.builder()
+    void whenGetSummary_shouldShowSummaryOrderPage() {
+        var product1 = ProductDto.builder()
                 .id(1L)
+                .name("Product 01")
+                .description("Description of Product 01")
+                .price(20.0f)
+                .build();
+        var orderItem1 = OrderItemDto.builder()
+                .id(1L)
+                .orderId(1L)
+                .productId(1L)
+                .product(product1)
+                .quantity(5)
+                .build();
+        var orderDto = OrderDto.builder()
+                .id(1L)
+                .orderItems(new ArrayList<>(List.of(orderItem1)))
+                .totalPrice(100.0f)
+                .createdAt(LocalDate.now())
                 .status(OrderStatus.PAID)
                 .build();
-        var product = Product.builder()
-                .id(1L)
-                .price(100.0f)
-                .build();
-        var orderItem = OrderItem.builder()
-                .quantity(5)
-                .product(product)
-                .order(order)
-                .build();
-        order.setItems(List.of(orderItem));
 
         when(orderService.findByIdAndStatus(anyLong(), any(OrderStatus.class)))
-                .thenReturn(Optional.of(order));
+                .thenReturn(Mono.just(orderDto));
 
-        mockMvc.perform(get("/order/summary/{id}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(view().name("summary"));
+        webTestClient.get()
+                .uri("/order/summary/{id}", 1L)
+                .exchange()
+                .expectStatus().isOk();
 
         verify(orderService, times(1)).findByIdAndStatus(anyLong(), any(OrderStatus.class));
     }

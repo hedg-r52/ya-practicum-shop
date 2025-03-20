@@ -3,6 +3,7 @@ package ru.yandex.practicum.shop.controller;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -12,13 +13,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestPart;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import ru.yandex.practicum.shop.dto.OrderItemDto;
 import ru.yandex.practicum.shop.dto.ProductDto;
-import ru.yandex.practicum.shop.entity.OrderItem;
-import ru.yandex.practicum.shop.entity.Product;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.ProductService;
-import ru.yandex.practicum.shop.service.impl.ProductServiceImpl;
 
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +29,9 @@ import java.util.stream.IntStream;
 @Controller
 @RequestMapping("/shop/product")
 public class ProductController {
+
+    private static final String PRODUCT_ATTR = "product";
+    private static final String PRODUCT_VIEW = "product";
 
     private static final int DEFAULT_PAGE_SIZE = 10;
 
@@ -40,7 +44,7 @@ public class ProductController {
     }
 
     @GetMapping
-    public String productList(
+    public Mono<String> productList(
             Model model,
             @RequestParam("page") Optional<Integer> page,
             @RequestParam("size") Optional<Integer> size,
@@ -53,64 +57,68 @@ public class ProductController {
 
         Sort sort = getSortByString(sortBy);
 
-        Page<ProductDto> products;
+        Mono<Page<ProductDto>> products;
         if (StringUtils.hasText(searchString)) {
             products = productService.findAllByNameContainingIgnoreCase(searchString, PageRequest.of(currentPage - 1, pageSize, sort));
         } else {
             products = productService.findAll(PageRequest.of(currentPage - 1, pageSize, sort));
         }
 
-        orderService.findLastActiveOrder().ifPresent(order -> {
-            Map<Long, Integer> productIdQuantityMap = order.getItems().stream().collect(
-                    Collectors.toMap(
-                            item -> item.getProduct().getId(),
-                            OrderItem::getQuantity,
-                            Integer::sum
-                    )
-            );
-            enrichProductDtoList(products, productIdQuantityMap);
-        });
-
-        model.addAttribute("products", products);
-        model.addAttribute("view", view);
-        model.addAttribute("search", searchString);
-        model.addAttribute("sortBy", sortBy);
-
-        int totalPages = products.getTotalPages();
-        if (totalPages > 0) {
-            long pageNumbers = IntStream.rangeClosed(1, totalPages).count();
-            model.addAttribute("pageNumbers", pageNumbers);
-        }
-        return "product-showcase";
+        return orderService.findLastActiveOrder()
+                .flatMap(order -> {
+                    Map<Long, Integer> productIdQuantityMap = order.getOrderItems().stream()
+                            .collect(Collectors.toMap(
+                                    OrderItemDto::getProductId,
+                                    OrderItemDto::getQuantity,
+                                    Integer::sum
+                            ));
+                    return products.doOnNext(productList -> enrichProductDtoList(productList, productIdQuantityMap));
+                })
+                .switchIfEmpty(products)
+                .doOnNext(productList -> {
+                    model.addAttribute("products", productList);
+                    model.addAttribute("view", view);
+                    model.addAttribute("search", searchString);
+                    model.addAttribute("sortBy", sortBy);
+                    int totalPages = productList.getTotalPages();
+                    if (totalPages > 0) {
+                        long pageNumbers = IntStream.rangeClosed(1, totalPages).count();
+                        model.addAttribute("pageNumbers", pageNumbers);
+                    }
+                })
+                .thenReturn("product-showcase");
     }
 
     @GetMapping("/{productId}")
-    public String productCard(Model model, @PathVariable Long productId) {
-        var product = productService.getProductById(productId).orElseThrow(
-                () -> new IllegalArgumentException("Продукт с id = " + productId + " не найден.")
-        );
-        orderService.findLastActiveOrder()
-                .flatMap(order -> order.getItems().stream()
-                        .filter(oi -> productId.equals(oi.getProduct().getId()))
-                        .findFirst()).ifPresent(oi -> {
-                    product.setQuantity(oi.getQuantity());
-                    product.setInCart(true);
-                });
-        model.addAttribute("product", product);
-        return "product";
+    public Mono<String> productCard(Model model, @PathVariable Long productId) {
+        return productService.getProductById(productId)
+                .switchIfEmpty(Mono.error(new IllegalStateException("Продукт с id = " + productId + " не найден.")))
+                .flatMap(product -> orderService.findLastActiveOrder()
+                        .flatMap(order -> Flux.fromIterable(order.getOrderItems())
+                                .filter(oi -> productId.equals(oi.getProductId()))
+                                .next()
+                                .doOnNext(oi -> {
+                                    product.setQuantity(oi.getQuantity());
+                                    product.setInCart(true);
+                                }))
+                        .thenReturn(product)
+                )
+                .switchIfEmpty(Mono.defer(() -> productService.getProductById(productId)))
+                .doOnNext(product -> model.addAttribute(PRODUCT_ATTR, product))
+                .thenReturn(PRODUCT_VIEW);
     }
 
     @GetMapping("/add")
-    public String addNewProductPage(Model model) {
-        model.addAttribute("product", new Product());
-        return "new-product";
+    public Mono<String> addNewProductPage(Model model) {
+        return Mono.fromRunnable(() -> model.addAttribute(PRODUCT_ATTR, new ProductDto()))
+                .thenReturn("new-product");
     }
 
     @PostMapping("/add")
-    public String addProduct(@ModelAttribute("product") ProductDto productDto,
-                             @RequestParam("imageFile") MultipartFile file) {
-        productService.saveProductWithImage(productDto, file);
-        return "redirect:/shop/product";
+    public Mono<String> addProduct(@ModelAttribute("product") ProductDto productDto,
+                             @RequestPart("imageFile") Mono<FilePart> fileMono) {
+        return fileMono.flatMap(file -> productService.saveProductWithImage(productDto, file))
+                .thenReturn("redirect:/shop/product");
     }
 
     private void enrichProductDtoList(Page<ProductDto> products, Map<Long, Integer> productMap) {
@@ -118,6 +126,9 @@ public class ProductController {
             if (productMap.containsKey(productDto.getId())) {
                 productDto.setInCart(true);
                 productDto.setQuantity(productMap.get(productDto.getId()));
+            } else {
+                productDto.setInCart(false);
+                productDto.setQuantity(0);
             }
         });
     }
