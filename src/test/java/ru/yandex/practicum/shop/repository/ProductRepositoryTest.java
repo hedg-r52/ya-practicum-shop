@@ -1,24 +1,27 @@
 package ru.yandex.practicum.shop.repository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.data.domain.Page;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 import ru.yandex.practicum.shop.entity.Product;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-@DataJpaTest
+@SpringBootTest
 @ActiveProfiles("test")
 class ProductRepositoryTest {
 
     @Autowired
     ProductRepository productRepository;
 
-    @Transactional
+    @BeforeEach
+    void setUp() {
+        productRepository.deleteAll().block();
+    }
+
     @Test
     void whenFindAllByNameContainingIgnoreCase_ThenShouldReturnResult() {
         productRepository.save(
@@ -26,14 +29,16 @@ class ProductRepositoryTest {
                         .name("Name")
                         .description("Description")
                         .price(100.00f)
-                        .image(null)
                         .build()
-        );
+        ).block();
 
-        Page<Product> products = productRepository.findAllByNameContainingIgnoreCase(
+        Flux<Product> productsFlux = productRepository.findAllByNameContainingIgnoreCase(
                 "Name",
                 PageRequest.of(0, 2)
         );
-        assertEquals(1L, products.getTotalElements());
+
+        StepVerifier.create(productsFlux)
+                .expectNextCount(1)  // Проверяем, что один продукт был найден
+                .verifyComplete();
     }
 }

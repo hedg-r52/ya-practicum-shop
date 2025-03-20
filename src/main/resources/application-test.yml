@@ -17,6 +17,8 @@ spring:
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-test.yml
     default-schema: public
+    user: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     enabled: true
     parameters:
       skipInsertData: true
