@@ -112,6 +112,9 @@ public class OrderServiceImpl implements OrderService {
 
 
     private Mono<Map<Long, ProductDto>> getProductMap(List<Long> productIds) {
+        if (productIds.isEmpty()) {
+            return Mono.just(Map.of());
+        }
         return productRepository.findAllById(productIds)
                 .collectMap(
                         Product::getId,
