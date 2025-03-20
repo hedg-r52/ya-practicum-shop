@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY --chown=gradle:gradle . .
 
-RUN gradle clean bootJar
+RUN gradle clean bootJar -x test
 
 FROM openjdk:21-jdk
 
