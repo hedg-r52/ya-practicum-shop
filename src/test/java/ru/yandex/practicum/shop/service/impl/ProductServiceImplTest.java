@@ -3,12 +3,16 @@ package ru.yandex.practicum.shop.service.impl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.Image;
 import ru.yandex.practicum.shop.entity.Product;
@@ -17,12 +21,11 @@ import ru.yandex.practicum.shop.repository.ImageRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.ProductService;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -59,7 +62,6 @@ class ProductServiceImplTest {
                 .build();
 
         List<Product> products = List.of(product1, product2);
-        Page<Product> productPage = new PageImpl<>(products, pageable, products.size());
 
         ProductDto productDto1 = new ProductDto();
         productDto1.setId(1L);
@@ -68,18 +70,20 @@ class ProductServiceImplTest {
         productDto2.setId(2L);
         productDto2.setName("Product 2");
 
-        when(productRepository.findAll(pageable)).thenReturn(productPage);
-
+        when(productRepository.findAllBy(pageable))
+                .thenReturn(Flux.fromIterable(products));
+        when(productRepository.count())
+                .thenReturn(Mono.just(2L));
         when(productMapper.toProductDto(product1)).thenReturn(productDto1);
         when(productMapper.toProductDto(product2)).thenReturn(productDto2);
 
-
-        Page<ProductDto> result = productService.findAll(pageable);
-
-        assertNotNull(result);
-        assertEquals(2, result.getContent().size());
-        assertEquals(productDto1, result.getContent().get(0));
-        assertEquals(productDto2, result.getContent().get(1));
+        StepVerifier.create(productService.findAll(pageable))
+                .assertNext(page -> {
+                    assertEquals(2, page.getContent().size());
+                    assertEquals(productDto1, page.getContent().get(0));
+                    assertEquals(productDto2, page.getContent().get(1));
+                })
+                .verifyComplete();
     }
 
     @Test
@@ -96,29 +100,29 @@ class ProductServiceImplTest {
                 .build();
 
         List<Product> products = List.of(product1, product2);
-        Page<Product> productPage = new PageImpl<>(products, pageable, products.size());
 
         ProductDto productDto1 = new ProductDto();
         productDto1.setId(1L);
         productDto1.setName("Product 1");
         ProductDto productDto2 = new ProductDto();
-        productDto1.setId(2L);
-        productDto1.setName("Product 2");
+        productDto2.setId(2L);
+        productDto2.setName("Product 2");
 
         when(productRepository.findAllByNameContainingIgnoreCase("Product", pageable))
-                .thenReturn(productPage);
+                .thenReturn(Flux.fromIterable(products));
+        when(productRepository.count())
+                .thenReturn(Mono.just(2L));
         when(productMapper.toProductDto(product1)).thenReturn(productDto1);
         when(productMapper.toProductDto(product2)).thenReturn(productDto2);
 
-        Page<ProductDto> result = productService.findAllByNameContainingIgnoreCase(
-                "Product",
-                PageRequest.of(0, 2)
-        );
+        StepVerifier.create(productService.findAllByNameContainingIgnoreCase("Product", pageable))
+                .assertNext(page -> {
+                    assertEquals(2, page.getContent().size());
+                    assertEquals(productDto1, page.getContent().get(0));
+                    assertEquals(productDto2, page.getContent().get(1));
+                })
+                .verifyComplete();
 
-        assertNotNull(result);
-        assertEquals(2, result.getContent().size());
-        assertEquals(productDto1, result.getContent().get(0));
-        assertEquals(productDto2, result.getContent().get(1));
         verify(productRepository, times(1)).findAllByNameContainingIgnoreCase(anyString(), any());
         verify(productMapper, times(2)).toProductDto(any());
     }
@@ -127,7 +131,6 @@ class ProductServiceImplTest {
     void whenGetProductByIdAndItExists_ThenReturnProduct() {
         Product product = Product.builder()
                 .id(1L)
-                .image(new Image())
                 .name("Product 1")
                 .price(100.00f)
                 .description("Description of Product 1")
@@ -143,15 +146,16 @@ class ProductServiceImplTest {
         );
 
         when(productMapper.toProductDto(product)).thenReturn(productDto);
-        when(productRepository.findById(anyLong())).thenReturn(Optional.of(product));
+        when(productRepository.findById(anyLong())).thenReturn(Mono.just(product));
 
-        Optional<ProductDto> productDtoOptional = productService.getProductById(1L);
+        StepVerifier.create(productService.getProductById(1L))
+                .assertNext(foundProduct -> {
+                    assertEquals(1L, foundProduct.getId());
+                    assertEquals("Product 1", foundProduct.getName());
+                    assertEquals(100.0f, foundProduct.getPrice());
+                })
+                .verifyComplete();
 
-        assertTrue(productDtoOptional.isPresent());
-        var foundProduct = productDtoOptional.get();
-        assertEquals(1L, foundProduct.getId());
-        assertEquals("Product 1", foundProduct.getName());
-        assertEquals(100.0f, foundProduct.getPrice());
         verify(productRepository, times(1)).findById(anyLong());
         verify(productMapper, times(1)).toProductDto(any());
     }
@@ -160,7 +164,6 @@ class ProductServiceImplTest {
     void whenSaveProductWithImage_ThenShouldSaveBoth() {
         Product product = Product.builder()
                 .id(1L)
-                .image(new Image())
                 .name("Product 1")
                 .price(100.00f)
                 .description("Description of Product 1")
@@ -177,7 +180,45 @@ class ProductServiceImplTest {
 
         when(productMapper.toProduct(productDto)).thenReturn(product);
 
-        productService.saveProductWithImage(productDto, new MockMultipartFile("image", (byte[]) null));
+        String fileContent = "file content";
+        DataBuffer dataBuffer = new DefaultDataBufferFactory().wrap(fileContent.getBytes(StandardCharsets.UTF_8));
+
+        FilePart filePart = new FilePart() {
+            @Override
+            public String filename() {
+                return "image.png";
+            }
+
+            @Override
+            public Mono<Void> transferTo(Path dest) {
+                return null;
+            }
+
+            @Override
+            public Flux<DataBuffer> content() {
+                return Flux.just(dataBuffer);
+            }
+
+            @Override
+            public String name() {
+                return "file";
+            }
+
+            @Override
+            public HttpHeaders headers() {
+                return HttpHeaders.EMPTY;
+            }
+
+        };
+
+        when(productRepository.save(any(Product.class))).thenReturn(Mono.just(product));
+
+        when(imageRepository.save(any(Image.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(productRepository.save(any(Product.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        StepVerifier.create(productService.saveProductWithImage(productDto, filePart))
+                .verifyComplete();
 
         verify(imageRepository, times(1)).save(any());
         verify(productMapper, times(1)).toProduct(any());
