@@ -2,9 +2,9 @@ spring:
   application:
     name: 'ya-practicum-shop'
   r2dbc:
-    url: r2dbc:postgresql://localhost:5432/shop
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: r2dbc:postgresql://postgres-shop:5432/shop
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
     pool:
       enabled: true
       initial-size: 10
@@ -13,16 +13,16 @@ spring:
       max-life-time: 10m
       validation-query: SELECT 1
   datasource:
-    url: jdbc:postgresql://localhost:5432/shop
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://postgres-shop:5432/shop
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-master.yml
     default-schema: public
-    url: jdbc:postgresql://localhost:5432/shop
-    user: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://postgres-shop:5432/shop
+    user: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
     enabled: true
 logging:
   level:
