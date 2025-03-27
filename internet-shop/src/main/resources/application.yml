@@ -24,6 +24,8 @@ spring:
     user: ${POSTGRES_USER:postgres}
     password: ${POSTGRES_PASSWORD:postgres}
     enabled: true
+  cache:
+    type: redis
 logging:
   level:
     io.r2dbc.postgresql.QUERY: DEBUG
