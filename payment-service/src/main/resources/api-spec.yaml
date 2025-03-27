@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info:
+  title: Payment Service
+  description: Payment Service
+  version: 1.0.0
+servers:
+  - url: 'https://'
+paths:
+  /payments:
+    get:
+      summary: Получить баланс
+      responses:
+        '200':
+          description: Баланс успешно получен
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Balance'
+    patch:
+      summary: Изменить баланс
+      responses:
+        '200':
+          description: Успешное изменение баланса
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Balance'
+components:
+  schemas:
+    Balance:
+      type: object
+      properties:
+        account:
+          type: integer
+          example: 10001
+          description: Номер аккаунта
+        value:
+          type: number
+          format: currency
+          example: 1000.00
+          description: Денежные средства
+      required:
+        - account
+        - value
