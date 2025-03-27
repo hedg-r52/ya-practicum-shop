@@ -1,6 +1,9 @@
 package ru.yandex.practicum.shop.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,7 @@ import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.CartService;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,23 +38,49 @@ public class CartServiceImpl implements CartService {
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final OrderItemMapper orderItemMapper;
+    private final CacheManager cacheManager;
 
     @Override
     public Mono<OrderDto> getCart() {
-        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
-                .switchIfEmpty(Mono.just(new Order()))
-                .flatMap(order -> orderItemRepository.findAllByOrderId(
-                                        order.getId(),
-                                        Sort.by("id").ascending()
-                                )
-                                .collectList()
-                                .flatMap(items -> {
-                                    List<Long> productIds = items.stream().map(OrderItem::getProductId).toList();
-                                    return getProductMap(productIds)
-                                            .map(productMap ->
-                                                    buildOrderDto(order, orderItemMapper.map(items), productMap));
-                                })
-                );
+        return Mono.defer(() -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+                    .flatMap(order -> {
+                        String cacheKey = String.valueOf(order.getId());
+
+                        Cache cache = cacheManager.getCache("cart");
+                        if (cache == null) return getCartAndCache(order);
+
+                        Cache.ValueWrapper cachedValueWrapper = cache.get(cacheKey);
+
+                        if (cachedValueWrapper != null) {
+                            Object cachedValue = cachedValueWrapper.get();
+                            if (cachedValue instanceof LinkedHashMap<?, ?> cachedMap) {
+                                return Mono.just(convertMapToOrderDto(cachedMap));
+                            }
+                        }
+
+                        return getCartAndCache(order);
+                    })
+        );
+    }
+
+    private Mono<OrderDto> getCartAndCache(Order order) {
+        return orderItemRepository.findAllByOrderId(
+                        order.getId(),
+                        Sort.by("id").ascending()
+                )
+                .collectList()
+                .flatMap(items -> {
+                    List<Long> productIds = items.stream().map(OrderItem::getProductId).toList();
+                    return getProductMap(productIds)
+                            .map(productMap -> buildOrderDto(order, orderItemMapper.map(items), productMap));
+                })
+                .doOnNext(orderDto -> {
+                    Cache cache = cacheManager.getCache("cart");
+                    if (cache != null) {
+                        String cacheKey = String.valueOf(orderDto.getId());
+                        cache.put(cacheKey, orderDto);  // Кешируем по ключу id активного заказа
+                    }
+                });
     }
 
     @Transactional
@@ -153,5 +183,10 @@ public class CartServiceImpl implements CartService {
                                 .price(product.getPrice())
                                 .build()
                 );
+    }
+
+    private OrderDto convertMapToOrderDto(Map<?, ?> map) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.convertValue(map, OrderDto.class);
     }
 }

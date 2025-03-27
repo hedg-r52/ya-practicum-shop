@@ -1,5 +1,6 @@
 package ru.yandex.practicum.shop.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class OrderDto {
     private Long id;
     private List<OrderItemDto> orderItems;
     private OrderStatus status;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate createdAt;
     private Float totalPrice;
 }
