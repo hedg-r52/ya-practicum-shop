@@ -1,23 +1,29 @@
 version: '3'
 
 services:
-  app:
-    build: .
-    container_name: shop-app
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
+  pg-shop:
+    container_name: postgres-shop
+    image: postgres:17-alpine
+    restart: always
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-shop:5432/shop
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shop
     networks:
       - shop-network
-
+  pg-payments:
+    container_name: postgres-payments
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shop
+    networks:
+      - shop-network
   redis:
-    image: redis:7.4-bookworm
     container_name: redis-server
+    image: redis:7.4-bookworm
     environment:
       REDIS_PASSWORD: redis
       REDIS_USER: redis
@@ -31,17 +37,34 @@ services:
     restart: unless-stopped
     tty: true
     stdin_open: true
-
-  postgres:
-    image: postgres:17-alpine
-    restart: always
-    container_name: postgres-shop
+  app:
+    container_name: shop-app
+    build:
+      dockerfile: Dockerfile-app-app
+      context: .
     ports:
-      - "5432:5432"
+      - "8080:8080"
+    depends_on:
+      - pg-shop
+      - redis
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: shop
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-shop/shop
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - shop-network
+  payments-service:
+    container_name: payments-service
+    build:
+      dockerfile: Dockerfile-payments
+      context: .
+    ports:
+      - "8090:8090"
+    depends_on:
+      - pg-payments
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
     networks:
       - shop-network
 networks:

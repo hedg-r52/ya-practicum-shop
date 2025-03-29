@@ -4,7 +4,7 @@ spring:
   application:
     name: payment-service
   r2dbc:
-    url: r2dbc:postgresql://localhost:5433/payments
+    url: r2dbc:postgresql://postgres-payments/payments
     username: ${POSTGRES_USER:postgres}
     password: ${POSTGRES_PASSWORD:postgres}
     pool:
@@ -17,7 +17,7 @@ spring:
   jpa:
     show-sql: false
   liquibase:
-    url: jdbc:postgresql://localhost:5433/payments
+    url: jdbc:postgresql://postgres-payments/payments
     user: ${POSTGRES_USER:postgres}
     password: ${POSTGRES_PASSWORD:postgres}
     change-log: classpath:/db/changelog/db.changelog-master.xml

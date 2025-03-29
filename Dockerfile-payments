@@ -4,11 +4,11 @@ WORKDIR /app
 
 COPY --chown=gradle:gradle . .
 
-RUN gradle clean bootJar -x test
+RUN gradle :payment-service:clean :payment-service:bootJar -x test
 
 FROM openjdk:21-jdk
 
-COPY --from=builder /app/build/libs/*.jar app.jar
+COPY --from=builder /app/payment-service/build/libs/*.jar app.jar
 
 EXPOSE 8080
 

@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: create_table_billing_account
+      author: hedg-r52
+      preConditions:
+        not:
+          tableExists:
+            tableName: billing_account
+      changes:
+        - createTable:
+            tableName: billing_account
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: money
+                  type: decimal
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: modified_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+            rollback:
+              - dropTable:
+                  tableName: billing_account
