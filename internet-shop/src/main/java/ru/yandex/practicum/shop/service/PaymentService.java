@@ -8,4 +8,6 @@ public interface PaymentService {
     Mono<BigDecimal> getBalance();
 
     Mono<BigDecimal> processPayment(BigDecimal value);
+
+    Mono<BigDecimal> depositPayment(BigDecimal value);
 }

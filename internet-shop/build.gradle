@@ -20,6 +20,10 @@ tasks.register('buildClient', GenerateTask) {
 
 sourceSets.main.java.srcDir "$projectDir/build/generated/src/main/java"
 
+dependencies {
+    testImplementation 'com.redis:testcontainers-redis:2.2.2'
+}
+
 tasks.named('compileJava') {
     dependsOn(tasks.buildClient)
 }

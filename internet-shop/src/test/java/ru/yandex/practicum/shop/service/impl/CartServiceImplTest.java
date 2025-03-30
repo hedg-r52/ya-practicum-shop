@@ -25,6 +25,7 @@ import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.PaymentService;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -204,7 +205,7 @@ class CartServiceImplTest {
                 .thenReturn(Mono.just(orderItem));
 
         StepVerifier.create(cartService.updateQuantity(2L, 1))
-                .expectError(IllegalArgumentException.class)
+                .expectError(ResourceNotFoundException.class)
                 .verify();
     }
 
@@ -259,7 +260,7 @@ class CartServiceImplTest {
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(cartService.removeProduct(2L))
-                .expectError(IllegalArgumentException.class)
+                .expectError(ResourceNotFoundException.class)
                 .verify();
     }
 
@@ -302,51 +303,55 @@ class CartServiceImplTest {
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         StepVerifier.create(cartService.moveCartToCheckout(1L))
-                .expectError(IllegalArgumentException.class)
+                .expectError(ResourceNotFoundException.class)
                 .verify();
     }
 
     @Test
     void whenConfirmPurchaseWithActiveOrder_ThenNewStatusShouldEqualsCheckout() {
-//        var order = getOrder();
-//        var product = getProduct1();
-//
-//        when(orderRepository.findById(1L))
-//                .thenReturn(Mono.just(order));
-//        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
-//                .thenReturn(Mono.just(order));
-//        when(orderItemRepository.findAllByOrderId(eq(order.getId()), any(Sort.class)))
-//                .thenReturn(Flux.just(getOrderItem()));
-//        when(productRepository.findAllById(List.of(1L)))
-//                .thenReturn(Flux.just(product));
-//        when(orderRepository.save(any(Order.class)))
-//                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-//
-//        StepVerifier.create(cartService.confirmPurchase(1L))
-//                .verifyComplete();
-//
-//        StepVerifier.create(cartService.getCart())
-//                .assertNext(cart -> {
-//                    assertNotNull(cart);
-//                    assertEquals(OrderStatus.PAID, cart.getStatus());
-//                })
-//                .verifyComplete();
-//
-//        verify(orderRepository, times(1)).save(any());
+        var order = getOrder();
+        var product = getProduct1();
+
+        when(orderRepository.findById(1L))
+                .thenReturn(Mono.just(order));
+        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+                .thenReturn(Mono.just(order));
+        when(orderItemRepository.findAllByOrderId(eq(order.getId()), any(Sort.class)))
+                .thenReturn(Flux.just(getOrderItem()));
+        when(productRepository.findAllById(List.of(1L)))
+                .thenReturn(Flux.just(product));
+        when(orderRepository.save(any(Order.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(paymentService.getBalance())
+                .thenReturn(Mono.just(BigDecimal.valueOf(1000)));
+        when(paymentService.processPayment(any(BigDecimal.class)))
+                .thenReturn(Mono.just(BigDecimal.valueOf(500)));
+
+        StepVerifier.create(cartService.confirmPurchase(1L))
+                .verifyComplete();
+
+        StepVerifier.create(cartService.getCart())
+                .assertNext(cart -> {
+                    assertNotNull(cart);
+                    assertEquals(OrderStatus.PAID, cart.getStatus());
+                })
+                .verifyComplete();
+
+        verify(orderRepository, times(1)).save(any());
     }
 
     @Test
     void whenConfirmPurchaseWithoutActiveOrder_ThenShouldThrowException() {
-//        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
-//                .thenReturn(Mono.empty());
-//        when(orderRepository.findById(1L))
-//                .thenReturn(Mono.empty());
-//        when(orderRepository.save(any(Order.class)))
-//                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-//
-//        StepVerifier.create(cartService.confirmPurchase(1L))
-//                .expectError(IllegalArgumentException.class)
-//                .verify();
+        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+                .thenReturn(Mono.empty());
+        when(orderRepository.findById(1L))
+                .thenReturn(Mono.empty());
+        when(orderRepository.save(any(Order.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(cartService.confirmPurchase(1L))
+                .expectError(IllegalArgumentException.class)
+                .verify();
     }
 
 

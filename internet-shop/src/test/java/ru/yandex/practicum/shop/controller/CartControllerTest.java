@@ -18,6 +18,7 @@ import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.PaymentService;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +75,9 @@ class CartControllerTest {
         OrderDto orderDto = prepareOrder(OrderStatus.CHECKOUT);
         when(orderService.findByIdAndStatus(1L, OrderStatus.CHECKOUT))
                 .thenReturn(Mono.just(orderDto));
+
+        when(paymentService.getBalance())
+                .thenReturn(Mono.just(BigDecimal.valueOf(1000)));
 
         webTestClient.get()
                 .uri("/cart/checkout/{id}", 1L)
