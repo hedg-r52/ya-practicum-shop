@@ -2,6 +2,7 @@ package ru.yandex.practicum.shop.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Sort;
@@ -14,13 +15,16 @@ import ru.yandex.practicum.shop.entity.Order;
 import ru.yandex.practicum.shop.entity.OrderItem;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.entity.Product;
+import ru.yandex.practicum.shop.exception.NotEnoughMoneyException;
 import ru.yandex.practicum.shop.exception.ResourceNotFoundException;
 import ru.yandex.practicum.shop.mapper.OrderItemMapper;
 import ru.yandex.practicum.shop.repository.OrderItemRepository;
 import ru.yandex.practicum.shop.repository.OrderRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.CartService;
+import ru.yandex.practicum.shop.service.PaymentService;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +34,7 @@ import static ru.yandex.practicum.shop.util.OrderUtil.buildOrderDto;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CartServiceImpl implements CartService {
 
     public static final String PRODUCT_NOT_FOUND = "Продукт не найден.";
@@ -39,27 +44,28 @@ public class CartServiceImpl implements CartService {
     private final ProductRepository productRepository;
     private final OrderItemMapper orderItemMapper;
     private final CacheManager cacheManager;
+    private final PaymentService paymentService;
 
     @Override
     public Mono<OrderDto> getCart() {
         return Mono.defer(() -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
-                    .flatMap(order -> {
-                        String cacheKey = String.valueOf(order.getId());
+                .flatMap(order -> {
+                    String cacheKey = String.valueOf(order.getId());
 
-                        Cache cache = cacheManager.getCache("cart");
-                        if (cache == null) return getCartAndCache(order);
+                    Cache cache = cacheManager.getCache("cart");
+                    if (cache == null) return getCartAndCache(order);
 
-                        Cache.ValueWrapper cachedValueWrapper = cache.get(cacheKey);
+                    Cache.ValueWrapper cachedValueWrapper = cache.get(cacheKey);
 
-                        if (cachedValueWrapper != null) {
-                            Object cachedValue = cachedValueWrapper.get();
-                            if (cachedValue instanceof LinkedHashMap<?, ?> cachedMap) {
-                                return Mono.just(convertMapToOrderDto(cachedMap));
-                            }
+                    if (cachedValueWrapper != null) {
+                        Object cachedValue = cachedValueWrapper.get();
+                        if (cachedValue instanceof LinkedHashMap<?, ?> cachedMap) {
+                            return Mono.just(convertMapToOrderDto(cachedMap));
                         }
+                    }
 
-                        return getCartAndCache(order);
-                    })
+                    return getCartAndCache(order);
+                })
         );
     }
 
@@ -87,7 +93,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public Mono<Void> addProduct(Long productId) {
         return productRepository.findById(productId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException(PRODUCT_NOT_FOUND)))
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException(PRODUCT_NOT_FOUND)))
                 .flatMap(product -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
                         .switchIfEmpty(createNewActiveOrder())
                         .flatMap(order -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
@@ -112,7 +118,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public Mono<Void> updateQuantity(Long productId, Integer delta) {
         return productRepository.findById(productId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException(PRODUCT_NOT_FOUND)))
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException(PRODUCT_NOT_FOUND)))
                 .flatMap(product -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
                         .flatMap(order -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
                                 .flatMap(orderItem -> {
@@ -135,7 +141,7 @@ public class CartServiceImpl implements CartService {
         return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Активный заказ не найден")))
                 .flatMap(order -> productRepository.findById(productId)
-                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Продукт не найден")))
+                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("Продукт не найден")))
                         .flatMap(product -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
                                 .flatMap(orderItemRepository::delete)
                                 .then()));
@@ -144,7 +150,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public Mono<Void> moveCartToCheckout(Long orderId) {
         return orderRepository.findById(orderId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Нет активного заказа. Невозможно оформить заказ")))
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Нет активного заказа. Невозможно оформить заказ")))
                 .flatMap(order -> {
                     order.setStatus(OrderStatus.CHECKOUT);
                     return orderRepository.save(order);
@@ -156,10 +162,25 @@ public class CartServiceImpl implements CartService {
     public Mono<Void> confirmPurchase(Long orderId) {
         return orderRepository.findById(orderId)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Нет активного заказа. Невозможно подтвердить оплату заказа")))
-                .flatMap(order -> {
-                    order.setStatus(OrderStatus.PAID);
-                    return orderRepository.save(order);
-                })
+                .flatMap(order -> orderItemRepository.findAllByOrderId(order.getId(), Sort.by("id").ascending())
+                        .collectList()
+                        .flatMap(items -> {
+                            List<Long> productIds = items.stream().map(OrderItem::getProductId).toList();
+                            return getProductMap(productIds)
+                                    .map(productMap -> buildOrderDto(order, orderItemMapper.map(items), productMap));
+                        })
+                        .flatMap(orderDto -> paymentService.getBalance()
+                                .doOnNext(balance -> log.info("Current balance: {}, Order total: {}", balance, orderDto.getTotalPrice()))
+                                .filter(balance -> balance.compareTo(BigDecimal.valueOf(orderDto.getTotalPrice())) >= 0)
+                                .switchIfEmpty(Mono.error(new NotEnoughMoneyException("Недостаточно средств")))
+                                .then(Mono.just(order)) // Продолжаем с объектом заказа
+                        )
+                        .flatMap(orderToUpdate -> {
+                            orderToUpdate.setStatus(OrderStatus.PAID);
+                            return orderRepository.save(orderToUpdate)
+                                    .doOnSuccess(savedOrder -> log.info("Order {} updated to {}", savedOrder.getId(), savedOrder.getStatus()));
+                        })
+                )
                 .then();
     }
 

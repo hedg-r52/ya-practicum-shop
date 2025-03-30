@@ -3,16 +3,20 @@ package ru.yandex.practicum.shop.controller;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
+import ru.yandex.practicum.shop.config.TestCacheConfig;
 import ru.yandex.practicum.shop.dto.OrderDto;
 import ru.yandex.practicum.shop.dto.OrderItemDto;
 import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.OrderService;
+import ru.yandex.practicum.shop.service.PaymentService;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -28,10 +32,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @WebFluxTest(CartController.class)
+@Import(TestCacheConfig.class)
+@ActiveProfiles("test")
 class CartControllerTest {
 
     @Autowired
     WebTestClient webTestClient;
+
+    @MockitoBean
+    PaymentService paymentService;
 
     @MockitoBean
     CartService cartService;

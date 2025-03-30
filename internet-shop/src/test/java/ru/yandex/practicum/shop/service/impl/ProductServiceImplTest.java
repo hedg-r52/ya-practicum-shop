@@ -3,22 +3,26 @@ package ru.yandex.practicum.shop.service.impl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import ru.yandex.practicum.shop.config.TestCacheConfig;
 import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.Image;
 import ru.yandex.practicum.shop.entity.Product;
 import ru.yandex.practicum.shop.mapper.ProductMapper;
 import ru.yandex.practicum.shop.repository.ImageRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
+import ru.yandex.practicum.shop.service.PaymentService;
 import ru.yandex.practicum.shop.service.ProductService;
 
 import java.nio.charset.StandardCharsets;
@@ -34,10 +38,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = {ProductServiceImpl.class, ProductMapper.class})
+@Import(TestCacheConfig.class)
+@ActiveProfiles("test")
 class ProductServiceImplTest {
 
     @Autowired
     private ProductService productService;
+
+    @MockitoBean
+    private PaymentService paymentService;
 
     @MockitoBean
     private ProductRepository productRepository;

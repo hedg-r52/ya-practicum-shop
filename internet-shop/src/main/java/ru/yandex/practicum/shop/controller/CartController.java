@@ -1,5 +1,6 @@
 package ru.yandex.practicum.shop.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,22 +14,21 @@ import ru.yandex.practicum.shop.entity.Order;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.OrderService;
+import ru.yandex.practicum.shop.service.PaymentService;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Controller
 @RequestMapping("/cart")
+@RequiredArgsConstructor
 public class CartController {
 
     private final CartService cartService;
-    private static final String SUCCESS = "success";
     private final OrderService orderService;
+    private final PaymentService paymentService;
 
-    public CartController(CartService cartService, OrderService orderService) {
-        this.cartService = cartService;
-        this.orderService = orderService;
-    }
+    private static final String SUCCESS = "success";
 
     @GetMapping
     public Mono<String> cart(Model model) {
@@ -50,7 +50,8 @@ public class CartController {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Заказ с id = " + orderId + " не найден")))
                 .doOnNext(order -> {
                     model.addAttribute("order", order);
-                    model.addAttribute("total", String.format("%.2f", order.getTotalPrice()));
+                    model.addAttribute("total", Math.round(order.getTotalPrice() * 100) / 100f);
+                    model.addAttribute("balance", paymentService.getBalance());
                 })
                 .thenReturn("checkout");
     }

@@ -147,6 +147,13 @@
       .btn-orange:hover {
           background-color: #e67000; /* Темнее при наведении */
       }
+
+      .btn-orange:disabled {
+          background-color: #CCCCCC; /* Серый цвет */
+          color: #666666;
+          cursor: not-allowed;
+          opacity: 0.7;
+      }
   </style>
 </head>
 <body>
@@ -159,6 +166,10 @@
     </div>
   </div>
   <div class="checkout-wrapper">
+    <div th:if="${balance != null}">
+                    <span style="margin-right: 10px">Баланс: <span
+                        th:text="${balance + '₽'}"></span></span>
+    </div>
     <table class="table table-striped table-bordered text-center">
       <thead class="table-dark">
       <tr>
@@ -187,8 +198,10 @@
       </tr>
       </tbody>
     </table>
+    <span th:if="${balance == null}" style="color: red;">Платежный сервис недоступен!</span>
+    <span th:if="${total > balance && balance != null}" style="color: red;">Недостаточно средств на счете!</span>
     <div class="text-end">
-      <button class="btn btn-orange" th:attr="onclick='confirmPurchase(' + ${order.id} + ')'">Оплатить</button>
+      <button th:disabled="${balance == null || total > balance}" class="btn btn-orange" th:attr="onclick='confirmPurchase(' + ${order.id} + ')'">Оплатить</button>
     </div>
   </div>
 </div>

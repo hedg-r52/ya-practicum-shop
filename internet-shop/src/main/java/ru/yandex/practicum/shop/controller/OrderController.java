@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Mono;
 import ru.yandex.practicum.shop.entity.OrderStatus;
+import ru.yandex.practicum.shop.exception.ResourceNotFoundException;
 import ru.yandex.practicum.shop.service.OrderService;
 
 import java.util.Optional;
@@ -54,7 +55,7 @@ public class OrderController {
     @GetMapping("/summary/{id}")
     public Mono<String> summary(Model model, @PathVariable("id") Long orderId) {
         return orderService.findByIdAndStatus(orderId, OrderStatus.PAID)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Заказ с id = " + orderId + " не найден или не завершен")))
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Заказ с id = " + orderId + " не найден или не завершен")))
                 .doOnNext(order -> {
                     model.addAttribute("order", order);
                     model.addAttribute("total", String.format("%.2f", order.getTotalPrice()));

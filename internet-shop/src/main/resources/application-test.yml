@@ -22,4 +22,6 @@ spring:
     enabled: true
     parameters:
       skipInsertData: true
-skipInsertData: true
+  cache:
+    type: none
+payments-service-uri: http://localhost:8090
