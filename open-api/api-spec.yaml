@@ -1,0 +1,118 @@
+openapi: 3.0.4
+info:
+  title: Payment Service
+  description: Payment Service API
+  version: 1.0.0
+paths:
+  /payments:
+    get:
+      tags:
+        - payments
+      summary: Получить баланс
+      responses:
+        200:
+          description: Баланс успешно получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        500:
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - payments
+      summary: Пополнить баланс
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositRequest'
+      responses:
+        200:
+          description: Баланс успешно пополнен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        500:
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - payments
+      summary: Списать денежные средства со счета
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        200:
+          description: Успешное изменение баланса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        402:
+          description: Недостаточно средств на счете
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Недостаточно средств на счете
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+tags:
+  - name: payments
+    description: Платежные операции
+components:
+  schemas:
+    BalanceResponse:
+      description: Текущий баланс счета
+      type: object
+      properties:
+        value:
+          type: number
+          format: currency
+          example: 1000.00
+          description: Денежные средства
+      required:
+        - account
+        - value
+    DepositRequest:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: number
+          format: currency
+          example: 100.00
+    PaymentRequest:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: number
+          format: currency
+          example: 100.00
+    ErrorResponse:
+      description: Ответ с ошибкой
+      type: object
+      properties:
+        message:
+          type: string
+          example: Внутренняя ошибка сервера

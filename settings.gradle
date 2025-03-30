@@ -1,1 +1,3 @@
 rootProject.name = 'ya-practicum-shop'
+
+include 'internet-shop', 'payment-service'

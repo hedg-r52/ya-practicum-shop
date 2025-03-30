@@ -2,59 +2,86 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.3'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.openapi.generator' version '7.12.0'
 }
 
-group = 'ru.yandex.practicum'
-version = '0.0.1-SNAPSHOT'
+bootJar {
+    enabled = false
+}
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    group = 'ru.yandex.practicum'
+    version = '3.0'
+    repositories {
+        mavenCentral()
     }
 }
 
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
+subprojects {
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    bootJar {
+        launchScript()
+    }
+
+    dependencies {
+        implementation platform('org.springframework.boot:spring-boot-dependencies:3.4.3')
+        implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+        implementation 'org.hibernate.reactive:hibernate-reactive-core:2.4.5.Final'
+        implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+        implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+        implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+        implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+        implementation 'org.liquibase:liquibase-core:4.31.1'
+        runtimeOnly 'org.postgresql:postgresql'
+
+        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+
+        compileOnly 'org.projectlombok:lombok:1.18.36'
+        annotationProcessor 'org.projectlombok:lombok:1.18.36'
+
+        compileOnly 'org.mapstruct:mapstruct:1.6.3'
+        annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+        implementation 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+        testCompileOnly 'org.projectlombok:lombok:1.18.36'
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
+
+        runtimeOnly 'org.postgresql:r2dbc-postgresql'
+
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:postgresql'
+        testImplementation 'org.testcontainers:r2dbc'
+        testImplementation 'io.projectreactor:reactor-test'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+
+    tasks.register('integration', Test) {
+        useJUnitPlatform {
+            includeTags 'integration'
+        }
+    }
+
+    tasks.register('unit', Test) {
+        useJUnitPlatform {
+            excludeTags 'integration'
+        }
     }
 }
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
-    implementation 'org.hibernate.reactive:hibernate-reactive-core:2.4.5.Final'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
-    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-    implementation 'org.liquibase:liquibase-core:4.31.1'
-    runtimeOnly 'org.postgresql:postgresql'
-
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
-
-    compileOnly 'org.mapstruct:mapstruct:1.6.3'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
-
-    implementation 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
-
-    testCompileOnly 'org.projectlombok:lombok:1.18.36'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
-
-    runtimeOnly 'org.postgresql:r2dbc-postgresql'
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:postgresql'
-    testImplementation 'org.testcontainers:r2dbc'
-    testImplementation 'io.projectreactor:reactor-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
-}

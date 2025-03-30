@@ -1,0 +1,29 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+tasks.register('buildClient', GenerateTask) {
+    generatorName.set("java")
+    inputSpec.set("$projectDir/../open-api/api-spec.yaml")
+    outputDir.set("$projectDir/build/generated")
+    ignoreFileOverride.set("$projectDir/../open-api/.openapi-generator-java-sources.ignore")
+    modelPackage.set("ru.yandex.practicum.shop.dto")
+    invokerPackage.set("ru.yandex.practicum")
+    apiPackage.set("ru.yandex.practicum.shop.api")
+    configOptions.set([
+            hideGenerationTimestamp: "true",
+            library                : "webclient",
+            useJakartaEe           : "true",
+            useTags                : "true",
+            openApiNullable        : "false",
+            serializableModel      : "true"
+    ])
+}
+
+sourceSets.main.java.srcDir "$projectDir/build/generated/src/main/java"
+
+dependencies {
+    testImplementation 'com.redis:testcontainers-redis:2.2.2'
+}
+
+tasks.named('compileJava') {
+    dependsOn(tasks.buildClient)
+}

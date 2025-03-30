@@ -1,0 +1,35 @@
+plugins {
+    id 'org.openapi.generator' version '7.12.0'
+}
+
+openApiGenerate {
+    generatorName.set("spring")
+    inputSpec.set("$projectDir/../open-api/api-spec.yaml")
+    outputDir.set("$projectDir/build/generated")
+    ignoreFileOverride.set("$projectDir/../open-api/.openapi-generator-java-sources.ignore")
+    modelPackage.set("ru.yandex.practicum.payments.domain")
+    invokerPackage.set("ru.yandex.practicum.payments")
+    apiPackage.set("ru.yandex.practicum.payments.api")
+    configOptions.set([
+            hideGenerationTimestamp: "true",
+            requestMappingMode     : "controller",
+            interfaceOnly          : "true",
+            library                : "spring-boot",
+            reactive               : "true",
+            useSpringBoot3         : "true",
+            useJakartaEe           : "true",
+            useTags                : "true",
+            dateLibrary            : "java8",
+            openApiNullable        : "false",
+            serializableModel      : "true",
+            returnSuccessCode      : "true",
+            useResponseEntity      : "false",
+            apiNameSuffix          : "Payments"
+    ])
+}
+
+sourceSets.main.java.srcDir "$projectDir/build/generated/src/main/java"
+
+tasks.named('compileJava') {
+    dependsOn(tasks.openApiGenerate)
+}

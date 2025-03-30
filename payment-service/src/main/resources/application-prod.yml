@@ -1,0 +1,25 @@
+server:
+  port: 8090
+spring:
+  application:
+    name: payment-service
+  r2dbc:
+    url: r2dbc:postgresql://postgres-payments/payments
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    pool:
+      enabled: true
+      initial-size: 10
+      max-size: 50
+      max-idle-time: 30s
+      max-life-time: 10m
+      validation-query: SELECT 1
+  jpa:
+    show-sql: false
+  liquibase:
+    url: jdbc:postgresql://postgres-payments/payments
+    user: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    change-log: classpath:/db/changelog/db.changelog-master.yml
+    default-schema: public
+    enabled: true

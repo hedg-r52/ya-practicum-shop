@@ -1,30 +1,64 @@
 version: '3'
 
 services:
-  app:
-    build: .
-    container_name: shop-app
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-shop:5432/shop
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-    networks:
-      - shop-network
-
-  postgres:
+  pg-shop:
+    container_name: postgres-shop
     image: postgres:17-alpine
     restart: always
-    container_name: postgres-shop
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: shop
+    networks:
+      - shop-network
+  pg-payments:
+    container_name: postgres-payments
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payments
+    networks:
+      - shop-network
+  redis:
+    container_name: 'redis'
+    image: redis:7.4-bookworm
+    restart: always
+    environment:
+      - REDIS_PASSWORD=password
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
+    networks:
+      - shop-network
+  app:
+    container_name: shop-app
+    build:
+      dockerfile: Dockerfile-app
+      context: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - pg-shop
+      - redis
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-shop/shop
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - shop-network
+  payments-service:
+    container_name: payments-service
+    build:
+      dockerfile: Dockerfile-payments
+      context: .
+    ports:
+      - "8090:8090"
+    depends_on:
+      - pg-payments
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
     networks:
       - shop-network
 networks:

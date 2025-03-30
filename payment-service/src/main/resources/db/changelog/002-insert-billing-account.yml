@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: insert-billing-account
+      author: hedg-r52
+      changes:
+        - insert:
+            tableName: billing_account
+            columns:
+              - column:
+                  name: money
+                  value: '1000.00'
+              - column:
+                  name: created_at
+                  value: '2025-03-29'
+              - column:
+                  name: modified_at
+                  value: '2025-03-29'

@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: 'ya-practicum-shop'
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/shop
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    pool:
+      enabled: true
+      initial-size: 10
+      max-size: 50
+      max-idle-time: 30s
+      max-life-time: 10m
+      validation-query: SELECT 1
+  datasource:
+    url: jdbc:postgresql://localhost:5432/shop
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yml
+    default-schema: public
+    url: jdbc:postgresql://localhost:5432/shop
+    user: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    enabled: true
+  cache:
+    type: redis
+#  webflux:
+#    client:
+#      response-timeout: 10s
+logging:
+  level:
+    io.r2dbc.postgresql.QUERY: DEBUG
+    io.r2dbc.postgresql.PARAM: DEBUG
+payments-service-uri: http://localhost:8090
