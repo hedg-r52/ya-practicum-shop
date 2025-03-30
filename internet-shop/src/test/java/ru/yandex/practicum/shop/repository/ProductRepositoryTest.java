@@ -3,23 +3,31 @@ package ru.yandex.practicum.shop.repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
+import ru.yandex.practicum.shop.AbstractTestContainer;
 import ru.yandex.practicum.shop.entity.Product;
 
-@SpringBootTest
+@DataR2dbcTest
 @ActiveProfiles("test")
-class ProductRepositoryTest {
+class ProductRepositoryTest extends AbstractTestContainer {
 
     @Autowired
     ProductRepository productRepository;
 
+    @MockitoBean
+    CacheManager cacheManager;
+
     @BeforeEach
     void setUp() {
-        productRepository.deleteAll().block();
+        productRepository.deleteAll()
+                .as(StepVerifier::create)
+                .verifyComplete();
     }
 
     @Test

@@ -20,6 +20,6 @@ spring:
     url: jdbc:postgresql://postgres-payments/payments
     user: ${POSTGRES_USER:postgres}
     password: ${POSTGRES_PASSWORD:postgres}
-    change-log: classpath:/db/changelog/db.changelog-master.xml
+    change-log: classpath:/db/changelog/db.changelog-master.yml
     default-schema: public
     enabled: true

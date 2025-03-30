@@ -18,29 +18,23 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: shop
+      POSTGRES_DB: payments
     networks:
       - shop-network
   redis:
-    container_name: redis-server
+    container_name: 'redis'
     image: redis:7.4-bookworm
+    restart: always
     environment:
-      REDIS_PASSWORD: redis
-      REDIS_USER: redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: [ "CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
-    tty: true
-    stdin_open: true
+      - REDIS_PASSWORD=password
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
+    networks:
+      - shop-network
   app:
     container_name: shop-app
     build:
-      dockerfile: Dockerfile-app-app
+      dockerfile: Dockerfile-app
       context: .
     ports:
       - "8080:8080"

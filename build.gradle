@@ -71,5 +71,17 @@ subprojects {
     tasks.named('test') {
         useJUnitPlatform()
     }
+
+    tasks.register('integration', Test) {
+        useJUnitPlatform {
+            includeTags 'integration'
+        }
+    }
+
+    tasks.register('unit', Test) {
+        useJUnitPlatform {
+            excludeTags 'integration'
+        }
+    }
 }
 

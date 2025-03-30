@@ -9,7 +9,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-@SpringBootTest
 @Testcontainers
 @ActiveProfiles("test")
 public class AbstractTestContainer {
