@@ -16,6 +16,7 @@ import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.PaymentService;
 
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,7 +52,8 @@ public class CartController {
                 .doOnNext(order -> {
                     model.addAttribute("order", order);
                     model.addAttribute("total", Math.round(order.getTotalPrice() * 100) / 100f);
-                    model.addAttribute("balance", paymentService.getBalance());
+                    model.addAttribute("balance", paymentService.getBalance()
+                            .map(balance -> balance.setScale(2, RoundingMode.HALF_UP)));
                 })
                 .thenReturn("checkout");
     }

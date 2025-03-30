@@ -33,7 +33,8 @@ public class OrderUtil {
                                     if (productDto == null && productDto.getPrice() == null) {
                                         throw new IllegalStateException("Цена продукта с ID " + oi.getProductId() + " не найдена");
                                     }
-                                    return oi.getQuantity() * productDto.getPrice();
+                                    var price = (productDto.getPrice() * 100) / 100f;
+                                    return oi.getQuantity() * price;
                                 })
                                 .reduce(0f, Float::sum)
                 )

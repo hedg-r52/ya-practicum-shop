@@ -2,9 +2,9 @@ package ru.yandex.practicum.shop.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +26,6 @@ import ru.yandex.practicum.shop.service.PaymentService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,6 @@ import static ru.yandex.practicum.shop.util.OrderUtil.buildOrderDto;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class CartServiceImpl implements CartService {
 
     public static final String PRODUCT_NOT_FOUND = "Продукт не найден.";
@@ -59,8 +57,8 @@ public class CartServiceImpl implements CartService {
 
                     if (cachedValueWrapper != null) {
                         Object cachedValue = cachedValueWrapper.get();
-                        if (cachedValue instanceof LinkedHashMap<?, ?> cachedMap) {
-                            return Mono.just(convertMapToOrderDto(cachedMap));
+                        if (cachedValue instanceof OrderDto orderDto) {
+                            return Mono.just(orderDto);
                         }
                     }
 
@@ -97,11 +95,9 @@ public class CartServiceImpl implements CartService {
                 .flatMap(product -> orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
                         .switchIfEmpty(createNewActiveOrder())
                         .flatMap(order -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
-                                .flatMap(orderItem ->
-                                        Mono.error(new IllegalArgumentException(
-                                                "Продукт с ID " + productId + " уже добавлен в заказ"
-                                        ))
-                                )
+                                .flatMap(orderItem -> Mono.error(new IllegalArgumentException(
+                                        "Продукт с ID " + productId + " уже добавлен в заказ"
+                                )))
                                 .switchIfEmpty(Mono.defer(() -> {
                                     OrderItem orderItem = new OrderItem();
                                     orderItem.setOrderId(order.getId());
@@ -109,7 +105,14 @@ public class CartServiceImpl implements CartService {
                                     orderItem.setQuantity(1);
                                     return orderItemRepository.save(orderItem);
                                 }))
+                                .thenReturn(order)
                         )
+                        .doOnNext(order -> {
+                            Cache cache = cacheManager.getCache("cart");
+                            if (cache != null) {
+                                cache.evict(order.getId());
+                            }
+                        })
                 )
                 .then();
     }
@@ -129,9 +132,15 @@ public class CartServiceImpl implements CartService {
                                         orderItem.setQuantity(newQuantity);
                                         return orderItemRepository.save(orderItem);
                                     }
-                                })
+                                }).thenReturn(order)
                         )
                 )
+                .doOnNext(order -> {
+                    Cache cache = cacheManager.getCache("cart");
+                    if (cache != null) {
+                        cache.evict(order.getId());
+                    }
+                })
                 .then();
     }
 
@@ -144,7 +153,14 @@ public class CartServiceImpl implements CartService {
                         .switchIfEmpty(Mono.error(new ResourceNotFoundException("Продукт не найден")))
                         .flatMap(product -> orderItemRepository.findByOrderIdAndProductId(order.getId(), productId)
                                 .flatMap(orderItemRepository::delete)
-                                .then()));
+                                .then()).thenReturn(order))
+                .doOnNext(order -> {
+                    Cache cache = cacheManager.getCache("cart");
+                    if (cache != null) {
+                        cache.evict(order.getId());
+                    }
+                })
+                .then();
     }
 
     @Override
@@ -170,15 +186,15 @@ public class CartServiceImpl implements CartService {
                                     .map(productMap -> buildOrderDto(order, orderItemMapper.map(items), productMap));
                         })
                         .flatMap(orderDto -> paymentService.getBalance()
-                                .doOnNext(balance -> log.info("Current balance: {}, Order total: {}", balance, orderDto.getTotalPrice()))
                                 .filter(balance -> balance.compareTo(BigDecimal.valueOf(orderDto.getTotalPrice())) >= 0)
                                 .switchIfEmpty(Mono.error(new NotEnoughMoneyException("Недостаточно средств")))
-                                .then(Mono.just(order)) // Продолжаем с объектом заказа
+                                .thenReturn(orderDto)
                         )
+                        .flatMap(orderDto -> paymentService.processPayment(BigDecimal.valueOf(orderDto.getTotalPrice()))
+                                .thenReturn(order))
                         .flatMap(orderToUpdate -> {
                             orderToUpdate.setStatus(OrderStatus.PAID);
-                            return orderRepository.save(orderToUpdate)
-                                    .doOnSuccess(savedOrder -> log.info("Order {} updated to {}", savedOrder.getId(), savedOrder.getStatus()));
+                            return orderRepository.save(orderToUpdate);
                         })
                 )
                 .then();

@@ -9,6 +9,7 @@ import ru.yandex.practicum.shop.dto.PaymentRequest;
 import ru.yandex.practicum.shop.service.PaymentService;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +30,6 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentRequest paymentRequest = new PaymentRequest();
         paymentRequest.setValue(value);
         return paymentsApi.paymentsPatch(paymentRequest)
-                .map(BalanceResponse::getValue);
+                .map(balanceResponse -> balanceResponse.getValue().setScale(2, RoundingMode.HALF_UP));
     }
 }
