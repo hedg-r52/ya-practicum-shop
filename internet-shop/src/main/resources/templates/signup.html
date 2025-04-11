@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Internet Shop / Sign Up</title>
+  <style>
+      * {
+          box-sizing: border-box;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+          background-color: #f5f5f5;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 100vh;
+          margin: 0;
+      }
+
+      .signup-wrapper {
+          background-color: white;
+          border-radius: 10px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          padding: 2rem;
+          width: 100%;
+          max-width: 400px;
+      }
+
+      h4 {
+          color: #333;
+          text-align: center;
+          margin-bottom: 1.5rem;
+          font-size: 1.5rem;
+      }
+
+      form div {
+          margin-bottom: 1.2rem;
+      }
+
+      label {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: #555;
+          font-weight: 500;
+      }
+
+      input {
+          width: 100%;
+          padding: 0.8rem;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          font-size: 1rem;
+          transition: border-color 0.3s;
+      }
+
+      input:focus {
+          outline: none;
+          border-color: #4a90e2;
+          box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+      }
+
+      button {
+          width: 100%;
+          padding: 0.8rem;
+          background-color: #4a90e2;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          font-size: 1rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.3s;
+      }
+
+      button:hover {
+          background-color: #3a7bc8;
+      }
+
+      .login-link {
+          text-align: center;
+          margin-top: 1rem;
+          color: #666;
+      }
+
+      .login-link a {
+          color: #4a90e2;
+          text-decoration: none;
+      }
+
+      .login-link a:hover {
+          text-decoration: underline;
+      }
+  </style>
+</head>
+<body>
+<div class="signup-wrapper">
+  <h4>Регистрация</h4>
+  <form th:action="@{/signup}" method="post">
+    <div>
+      <label for="login">Логин</label>
+      <input type="text" id="login" name="login" aria-describedby="login"
+             placeholder="Введите ваш логин" required>
+    </div>
+    <div>
+      <label for="password">Пароль</label>
+      <input type="password" id="password" name="password"
+             placeholder="Введите ваш пароль" required>
+    </div>
+    <button type="submit">Зарегистрироваться</button>
+  </form>
+  <div class="login-link">
+    Уже есть аккаунт? <a th:href="@{/login}">Войти</a>
+  </div>
+</div>
+</body>
+</html>

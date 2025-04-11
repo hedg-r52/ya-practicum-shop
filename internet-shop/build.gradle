@@ -21,6 +21,8 @@ tasks.register('buildClient', GenerateTask) {
 sourceSets.main.java.srcDir "$projectDir/build/generated/src/main/java"
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
     testImplementation 'com.redis:testcontainers-redis:2.2.2'
 }
 
