@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,15 +39,25 @@ class PaymentServiceImplTest {
 
     @Test
     void whenGetBalance_thenShouldReturnBalance() {
-        when(billingAccountRepository.findFirstByOrderByCreatedAt())
+        when(billingAccountRepository.findByUserId(anyLong()))
                 .thenReturn(Mono.just(BillingAccount.builder()
                         .id(1L)
+                        .userId(1L)
                         .money(BigDecimal.valueOf(1000))
                         .createdAt(LocalDate.now())
                         .modifiedAt(LocalDate.now())
                         .build()));
 
-        StepVerifier.create(paymentService.getBalance())
+        when(billingAccountRepository.save(any(BillingAccount.class)))
+                .thenReturn(Mono.just(BillingAccount.builder()
+                        .id(1L)
+                        .userId(1L)
+                        .money(BigDecimal.ZERO)
+                        .createdAt(LocalDate.now())
+                        .modifiedAt(LocalDate.now())
+                        .build()));
+
+        StepVerifier.create(paymentService.getBalance(1L))
                 .expectNextMatches(balanceResponse -> balanceResponse.getValue() != null
                         && balanceResponse.getValue().equals(BigDecimal.valueOf(1000)))
                 .verifyComplete();
@@ -57,9 +68,10 @@ class PaymentServiceImplTest {
         var request = new PaymentRequest();
         request.setValue(BigDecimal.valueOf(900));
 
-        when(billingAccountRepository.findFirstByOrderByCreatedAt())
+        when(billingAccountRepository.findByUserId(anyLong()))
                 .thenReturn(Mono.just(BillingAccount.builder()
                         .id(1L)
+                        .userId(1L)
                         .money(BigDecimal.valueOf(1000))
                         .createdAt(LocalDate.now())
                         .modifiedAt(LocalDate.now())
@@ -68,17 +80,18 @@ class PaymentServiceImplTest {
         when(billingAccountRepository.save(any(BillingAccount.class)))
                 .thenReturn(Mono.just(BillingAccount.builder()
                         .id(1L)
+                        .userId(1L)
                         .money(BigDecimal.valueOf(100))
                         .createdAt(LocalDate.now())
                         .modifiedAt(LocalDate.now())
                         .build()));
 
-        StepVerifier.create(paymentService.processPayment(request))
+        StepVerifier.create(paymentService.processPayment(anyLong(), request))
                 .expectNextMatches(balanceResponse -> balanceResponse.getValue() != null
                         && balanceResponse.getValue().equals(BigDecimal.valueOf(100)))
                 .verifyComplete();
 
-        verify(billingAccountRepository, times(1)).findFirstByOrderByCreatedAt();
+        verify(billingAccountRepository, times(1)).findByUserId(anyLong());
         verify(billingAccountRepository, times(1)).save(any(BillingAccount.class));
     }
 
@@ -87,19 +100,20 @@ class PaymentServiceImplTest {
         var request = new PaymentRequest();
         request.setValue(BigDecimal.valueOf(1500));
 
-        when(billingAccountRepository.findFirstByOrderByCreatedAt())
+        when(billingAccountRepository.findByUserId(anyLong()))
                 .thenReturn(Mono.just(BillingAccount.builder()
                         .id(1L)
+                        .userId(1L)
                         .money(BigDecimal.valueOf(1000))
                         .createdAt(LocalDate.now())
                         .modifiedAt(LocalDate.now())
                         .build()));
 
-        StepVerifier.create(paymentService.processPayment(request))
+        StepVerifier.create(paymentService.processPayment(anyLong(), request))
                 .expectError(NotEnoughMoneyException.class)
                 .verify();
 
-        verify(billingAccountRepository, times(1)).findFirstByOrderByCreatedAt();
+        verify(billingAccountRepository, times(1)).findByUserId(anyLong());
     }
 
     @Test
@@ -107,9 +121,10 @@ class PaymentServiceImplTest {
         var request = new PaymentRequest();
         request.setValue(BigDecimal.valueOf(900));
 
-        when(billingAccountRepository.findFirstByOrderByCreatedAt())
+        when(billingAccountRepository.findByUserId(anyLong()))
                 .thenReturn(Mono.just(BillingAccount.builder()
                         .id(1L)
+                        .userId(1L)
                         .money(BigDecimal.valueOf(1000))
                         .createdAt(LocalDate.now())
                         .modifiedAt(LocalDate.now())
@@ -118,17 +133,18 @@ class PaymentServiceImplTest {
         when(billingAccountRepository.save(any(BillingAccount.class)))
                 .thenReturn(Mono.just(BillingAccount.builder()
                         .id(1L)
+                        .userId(1L)
                         .money(BigDecimal.valueOf(500))
                         .createdAt(LocalDate.now())
                         .modifiedAt(LocalDate.now())
                         .build()));
 
-        StepVerifier.create(paymentService.processPayment(request))
+        StepVerifier.create(paymentService.processPayment(anyLong(), request))
                 .expectNextMatches(balanceResponse -> balanceResponse.getValue() != null
                         && balanceResponse.getValue().equals(BigDecimal.valueOf(500)))
                 .verifyComplete();
 
-        verify(billingAccountRepository, times(1)).findFirstByOrderByCreatedAt();
+        verify(billingAccountRepository, times(1)).findByUserId(anyLong());
         verify(billingAccountRepository, times(1)).save(any(BillingAccount.class));
     }
 }
