@@ -17,6 +17,12 @@ databaseChangeLog:
                   constraints:
                     primaryKey: true
               - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
                   name: money
                   type: decimal
                   constraints:
