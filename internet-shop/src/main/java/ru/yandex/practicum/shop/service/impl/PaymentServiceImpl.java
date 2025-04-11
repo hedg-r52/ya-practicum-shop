@@ -19,26 +19,26 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentsApi paymentsApi;
 
     @Override
-    public Mono<BigDecimal> getBalance() {
-        return paymentsApi.paymentsGet()
+    public Mono<BigDecimal> getBalance(Long userId) {
+        return paymentsApi.paymentsBalanceUserIdGet(userId)
                 .onErrorResume(throwable -> Mono.empty())
                 .onErrorComplete()
                 .map(BalanceResponse::getValue);
     }
 
     @Override
-    public Mono<BigDecimal> processPayment(BigDecimal value) {
+    public Mono<BigDecimal> processPayment(Long userId, BigDecimal value) {
         PaymentRequest paymentRequest = new PaymentRequest();
         paymentRequest.setValue(value);
-        return paymentsApi.paymentsPatch(paymentRequest)
+        return paymentsApi.paymentsWithdrawUserIdPost(userId, paymentRequest)
                 .map(balanceResponse -> balanceResponse.getValue().setScale(2, RoundingMode.HALF_UP));
     }
 
     @Override
-    public Mono<BigDecimal> depositPayment(BigDecimal value) {
+    public Mono<BigDecimal> depositPayment(Long userId, BigDecimal value) {
         DepositRequest depositRequest = new DepositRequest();
         depositRequest.setValue(value);
-        return paymentsApi.paymentsPost(depositRequest)
+        return paymentsApi.paymentsRefillUserIdPost(userId, depositRequest)
                 .map(BalanceResponse::getValue);
     }
 

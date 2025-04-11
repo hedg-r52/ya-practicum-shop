@@ -5,9 +5,9 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 
 public interface PaymentService {
-    Mono<BigDecimal> getBalance();
+    Mono<BigDecimal> getBalance(Long userId);
 
-    Mono<BigDecimal> processPayment(BigDecimal value);
+    Mono<BigDecimal> processPayment(Long userId, BigDecimal value);
 
-    Mono<BigDecimal> depositPayment(BigDecimal value);
+    Mono<BigDecimal> depositPayment(Long userId, BigDecimal value);
 }
