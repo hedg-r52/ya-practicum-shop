@@ -5,5 +5,5 @@ import reactor.core.publisher.Mono;
 import ru.yandex.practicum.payments.model.BillingAccount;
 
 public interface BillingAccountRepository extends R2dbcRepository<BillingAccount, Long> {
-    Mono<BillingAccount> findFirstByOrderByCreatedAt();
+    Mono<BillingAccount> findByUserId(Long userId);
 }
