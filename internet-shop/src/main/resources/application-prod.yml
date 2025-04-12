@@ -31,4 +31,18 @@ spring:
       host: redis
       port: 6379
       password: password
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://keycloak:8180/realms/master
+        registration:
+          internet-shop:
+            provider: keycloak
+            authorization-grant-type: client_credentials
+            client-id: internet-shop
+            client-secret: xxx
+            scope: profile
+            client-authentication-method: client_secret_post
 payments-service-uri: http://payments-service:8090

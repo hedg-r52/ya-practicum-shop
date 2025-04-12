@@ -8,6 +8,7 @@ import ru.yandex.practicum.shop.dto.BalanceResponse;
 import ru.yandex.practicum.shop.dto.DepositRequest;
 import ru.yandex.practicum.shop.dto.PaymentRequest;
 import ru.yandex.practicum.shop.service.PaymentService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,28 +18,32 @@ import java.math.RoundingMode;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentsApi paymentsApi;
+    private final SecurityUtils securityUtils;
 
     @Override
-    public Mono<BigDecimal> getBalance(Long userId) {
-        return paymentsApi.paymentsBalanceUserIdGet(userId)
-                .onErrorResume(throwable -> Mono.empty())
-                .onErrorComplete()
-                .map(BalanceResponse::getValue);
+    public Mono<BigDecimal> getBalance() {
+        return securityUtils.getUserId()
+                        .flatMap(paymentsApi::paymentsBalanceUserIdGet)
+                        .onErrorResume(throwable -> Mono.empty())
+                        .onErrorComplete()
+                        .map(BalanceResponse::getValue);
     }
 
     @Override
-    public Mono<BigDecimal> processPayment(Long userId, BigDecimal value) {
+    public Mono<BigDecimal> processPayment(BigDecimal value) {
         PaymentRequest paymentRequest = new PaymentRequest();
         paymentRequest.setValue(value);
-        return paymentsApi.paymentsWithdrawUserIdPost(userId, paymentRequest)
+        return securityUtils.getUserId()
+                .flatMap(userId -> paymentsApi.paymentsWithdrawUserIdPost(userId, paymentRequest))
                 .map(balanceResponse -> balanceResponse.getValue().setScale(2, RoundingMode.HALF_UP));
     }
 
     @Override
-    public Mono<BigDecimal> depositPayment(Long userId, BigDecimal value) {
+    public Mono<BigDecimal> depositPayment(BigDecimal value) {
         DepositRequest depositRequest = new DepositRequest();
         depositRequest.setValue(value);
-        return paymentsApi.paymentsRefillUserIdPost(userId, depositRequest)
+        return securityUtils.getUserId()
+                .flatMap(userId -> paymentsApi.paymentsRefillUserIdPost(userId, depositRequest))
                 .map(BalanceResponse::getValue);
     }
 

@@ -29,6 +29,22 @@ spring:
 #  webflux:
 #    client:
 #      response-timeout: 10s
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8180/realms/master
+        registration:
+          internet-shop:
+            provider: keycloak
+            authorization-grant-type: client_credentials
+            client-id: internet-shop
+            client-secret: xxx
+            scope: profile
+            client-authentication-method: client_secret_post
+
+
 logging:
   level:
     io.r2dbc.postgresql.QUERY: DEBUG

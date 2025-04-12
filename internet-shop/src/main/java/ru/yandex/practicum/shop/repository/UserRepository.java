@@ -8,6 +8,6 @@ import ru.yandex.practicum.shop.entity.User;
 @Repository
 public interface UserRepository extends R2dbcRepository<User, Long> {
 
-    Mono<User> findByLogin(String login);
+    Mono<User> findByUsername(String username);
 
 }
