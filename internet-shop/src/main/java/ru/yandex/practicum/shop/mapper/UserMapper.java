@@ -14,5 +14,7 @@ public interface UserMapper {
 
     @Mapping(target = "password", source = "password", qualifiedByName = "encodePassword")
     @Mapping(target = "role", constant = "ROLE_CLIENT")
+    @Mapping(target = "createdAt", expression = "java(userDto.getCreatedAt() == null ? java.time.LocalDate.now() : userDto.getCreatedAt())")
+    @Mapping(target = "modifiedAt", expression = "java(userDto.getModifiedAt() == null ? java.time.LocalDate.now() : userDto.getModifiedAt())")
     User map(UserDto userDto);
 }

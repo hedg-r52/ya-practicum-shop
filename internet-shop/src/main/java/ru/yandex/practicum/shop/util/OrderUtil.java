@@ -23,6 +23,7 @@ public class OrderUtil {
 
         return OrderDto.builder()
                 .id(order.getId())
+                .userId(order.getUserId())
                 .orderItems(enrichedItems)
                 .status(order.getStatus())
                 .createdAt(order.getCreatedAt())

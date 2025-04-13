@@ -2,10 +2,6 @@ databaseChangeLog:
   - changeSet:
       id: create_table_users
       author: hedg-r52
-      preConditions:
-        not:
-          tableExists:
-            tableName: users
       changes:
         - createTable:
             catalogName: shop

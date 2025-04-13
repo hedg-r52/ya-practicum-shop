@@ -18,6 +18,7 @@ import java.util.List;
 @Builder
 public class OrderDto {
     private Long id;
+    private Long userId;
     private List<OrderItemDto> orderItems;
     private OrderStatus status;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")

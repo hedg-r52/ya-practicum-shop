@@ -22,6 +22,8 @@ public class Order {
     @Id
     private Long id;
 
+    private Long userId;
+
     @Column("status")
     private OrderStatus status;
 

@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -20,6 +21,7 @@ import ru.yandex.practicum.shop.dto.OrderItemDto;
 import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.ProductService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.util.Map;
 import java.util.Optional;
@@ -37,10 +39,12 @@ public class ProductController {
 
     private final ProductService productService;
     private final OrderService orderService;
+    private final SecurityUtils securityUtils;
 
-    public ProductController(ProductService productService, OrderService orderService) {
+    public ProductController(ProductService productService, OrderService orderService, SecurityUtils securityUtils) {
         this.productService = productService;
         this.orderService = orderService;
+        this.securityUtils = securityUtils;
     }
 
     @GetMapping
@@ -50,7 +54,8 @@ public class ProductController {
             @RequestParam("size") Optional<Integer> size,
             @RequestParam(value = "sortBy", defaultValue = "alphabet_asc") String sortBy,
             @RequestParam(value = "view", defaultValue = "grid") String view,
-            @RequestParam("search") Optional<String> search) {
+            @RequestParam("search") Optional<String> search,
+            Authentication authentication) {
         int currentPage = page.orElse(1);
         int pageSize = size.orElse(DEFAULT_PAGE_SIZE);
         String searchString = search.orElse("");
@@ -64,22 +69,31 @@ public class ProductController {
             products = productService.findAll(PageRequest.of(currentPage - 1, pageSize, sort));
         }
 
-        return orderService.findLastActiveOrder()
-                .flatMap(order -> {
-                    Map<Long, Integer> productIdQuantityMap = order.getOrderItems().stream()
-                            .collect(Collectors.toMap(
-                                    OrderItemDto::getProductId,
-                                    OrderItemDto::getQuantity,
-                                    Integer::sum
-                            ));
-                    return products.doOnNext(productList -> enrichProductDtoList(productList, productIdQuantityMap));
+        return securityUtils.getUserId()
+                .defaultIfEmpty(0L)
+                .flatMap(userId -> {
+                    if (userId != 0L) {
+                        return orderService.findLastActiveOrder(userId)
+                                .flatMap(order -> {
+                                    Map<Long, Integer> productIdQuantityMap = order.getOrderItems().stream()
+                                            .collect(Collectors.toMap(
+                                                    OrderItemDto::getProductId,
+                                                    OrderItemDto::getQuantity,
+                                                    Integer::sum
+                                            ));
+                                    return products.doOnNext(productList -> enrichProductDtoList(productList, productIdQuantityMap));
+                                })
+                                .switchIfEmpty(products);
+                    } else {
+                        return products;
+                    }
                 })
-                .switchIfEmpty(products)
                 .doOnNext(productList -> {
                     model.addAttribute("products", productList);
                     model.addAttribute("view", view);
                     model.addAttribute("search", searchString);
                     model.addAttribute("sortBy", sortBy);
+                    model.addAttribute("isAnonymous", authentication == null);
                     int totalPages = productList.getTotalPages();
                     if (totalPages > 0) {
                         long pageNumbers = IntStream.rangeClosed(1, totalPages).count();
@@ -90,23 +104,34 @@ public class ProductController {
     }
 
     @GetMapping("/{productId}")
-    public Mono<String> productCard(Model model, @PathVariable Long productId) {
-        return productService.getProductById(productId)
-                .switchIfEmpty(Mono.error(new IllegalStateException("Продукт с id = " + productId + " не найден.")))
-                .flatMap(product -> orderService.findLastActiveOrder()
-                        .flatMap(order -> Flux.fromIterable(order.getOrderItems())
-                                .filter(oi -> productId.equals(oi.getProductId()))
-                                .next()
-                                .doOnNext(oi -> {
-                                    product.setQuantity(oi.getQuantity());
-                                    product.setInCart(true);
-                                }))
-                        .thenReturn(product)
+    public Mono<String> productCard(Model model, @PathVariable Long productId, Authentication authentication) {
+        Mono<ProductDto> productMono = productService.getProductById(productId)
+                .switchIfEmpty(Mono.error(new IllegalStateException("Продукт с id = " + productId + " не найден.")));
+
+        Mono<Long> userIdMono = securityUtils.getUserId(); // возвращает Mono.empty() если не залогинен
+
+        return userIdMono
+                .flatMap(userId ->
+                        productMono.flatMap(product ->
+                                orderService.findLastActiveOrder(userId)
+                                        .flatMap(order -> Flux.fromIterable(order.getOrderItems())
+                                                .filter(oi -> productId.equals(oi.getProductId()))
+                                                .next()
+                                                .doOnNext(oi -> {
+                                                    product.setQuantity(oi.getQuantity());
+                                                    product.setInCart(true);
+                                                }))
+                                        .thenReturn(product)
+                        )
                 )
-                .switchIfEmpty(Mono.defer(() -> productService.getProductById(productId)))
-                .doOnNext(product -> model.addAttribute(PRODUCT_ATTR, product))
+                .switchIfEmpty(productMono) // если пользователь не залогинен, просто вернём продукт
+                .doOnNext(product -> {
+                    model.addAttribute(PRODUCT_ATTR, product);
+                    model.addAttribute("isAnonymous", authentication == null);
+                })
                 .thenReturn(PRODUCT_VIEW);
     }
+
 
     @GetMapping("/add")
     public Mono<String> addNewProductPage(Model model) {
@@ -116,7 +141,7 @@ public class ProductController {
 
     @PostMapping("/add")
     public Mono<String> addProduct(@ModelAttribute("product") ProductDto productDto,
-                             @RequestPart("imageFile") Mono<FilePart> fileMono) {
+                                   @RequestPart("imageFile") Mono<FilePart> fileMono) {
         return fileMono.flatMap(file -> productService.saveProductWithImage(productDto, file))
                 .thenReturn("redirect:/shop/product");
     }

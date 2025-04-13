@@ -13,7 +13,11 @@ public interface OrderRepository extends R2dbcRepository<Order, Long> {
 
     Mono<Order> findFirstByStatusOrderByCreatedAtDesc(OrderStatus status);
 
+    Mono<Order> findFirstByUserIdAndStatusOrderByCreatedAt(Long userId, OrderStatus status);
+
     Mono<Order> findByIdAndStatus(Long id, OrderStatus status);
 
-    Flux<Order> findAllBy(Pageable pageable);
+    Flux<Order> findAllByUserId(Long userId, Pageable pageable);
+
+    Mono<Long> countByUserId(Long userId);
 }

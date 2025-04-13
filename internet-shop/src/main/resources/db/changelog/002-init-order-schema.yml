@@ -13,6 +13,11 @@ databaseChangeLog:
                   constraints:
                     primaryKey: true
               - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
                   name: status
                   type: varchar
                   constraints:

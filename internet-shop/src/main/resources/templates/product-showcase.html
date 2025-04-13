@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html"
+      xmlns:sec="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
@@ -203,8 +204,15 @@
       </select>
     </div>
     <div class="navigation-links">
-      <a th:href="@{/order}">Заказы</a>
-      <a th:href="@{/cart}">Корзина</a>
+      <div th:if="${isAnonymous}">
+        <a th:href="@{/signup}">Регистрация</a>
+        <a th:href="@{/login}">Войти</a>
+      </div>
+      <div sec:authorize="isAuthenticated()">
+        <a th:href="@{/order}">Заказы</a>
+        <a th:href="@{/cart}">Корзина</a>
+        <a th:href="@{/logout}">Выйти</a>
+      </div>
     </div>
   </div>
   <div class="pagination-select">
@@ -237,7 +245,7 @@
         </div>
         <div><p th:text="${product.description}">Описание товара</p></div>
         <div><span th:text="'Цена: ' + ${product.price} + ' ₽'">Цена</span></div>
-        <div class="action-buttons">
+        <div sec:authorize="isAuthenticated()" class="action-buttons">
           <button class="btn-add" th:if="${!product.inCart}" th:attr="onclick='addToCart(' + ${product.id} +')'">В корзину</button>
 
           <div class="quantity-control" th:if="${product.inCart}">

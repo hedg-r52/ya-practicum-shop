@@ -27,7 +27,7 @@ public class User implements UserDetails {
     @Id
     private Long id;
 
-    private String username;
+    private String login;
 
     private String password;
 
@@ -38,6 +38,11 @@ public class User implements UserDetails {
 
     @LastModifiedDate
     private LocalDate modifiedAt;
+
+    @Override
+    public String getUsername() {
+        return login;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
