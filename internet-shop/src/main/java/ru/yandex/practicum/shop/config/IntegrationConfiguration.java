@@ -24,32 +24,13 @@ public class IntegrationConfiguration {
         return new PaymentsApi(apiClient);
     }
 
-//    @Bean
-//    public WebClient webClient(ReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
-//        var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
-//        oauth2.setDefaultClientRegistrationId("shop");
-//        return WebClient.builder()
-//                .filter((request, next) -> {
-//                    // Логируем запрос
-//                    log.debug("➡️ Request: " + request.method() + " " + request.url());
-//                    request.headers().forEach((name, values) -> values.forEach(value ->
-//                            log.debug("🧾 Header: " + name + " = " + value)
-//                    ));
-//
-//                    // Дальше передаём запрос в следующий фильтр
-//                    return next.exchange(request);
-//                })
-//                .filter(oauth2)
-//                .build();
-//    }
-
     @Bean
     public WebClient webClient(ReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
         var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
         oauth2.setDefaultClientRegistrationId("shop");
 
         return WebClient.builder()
-                .filter(oauth2)  // OAuth2 фильтр для авторизации
+                .filter(oauth2)
                 .build();
     }
 

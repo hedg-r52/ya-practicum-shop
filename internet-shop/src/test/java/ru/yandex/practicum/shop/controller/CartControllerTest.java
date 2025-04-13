@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -17,6 +18,7 @@ import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.PaymentService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 @WebFluxTest(CartController.class)
 @Import(TestCacheConfig.class)
@@ -49,7 +52,11 @@ class CartControllerTest {
     @MockitoBean
     OrderService orderService;
 
+    @MockitoBean
+    SecurityUtils securityUtils;
+
     @Test
+    @WithMockUser
     void whenGetCart_shouldReturnListOfProducts() {
         OrderDto orderDto = prepareOrder(OrderStatus.ACTIVE);
         when(cartService.getCart())
@@ -71,6 +78,7 @@ class CartControllerTest {
     }
 
     @Test
+    @WithMockUser
     void whenGetCheckoutPage_shouldReturnCheckoutOrder() {
         OrderDto orderDto = prepareOrder(OrderStatus.CHECKOUT);
         when(orderService.findByIdAndStatus(1L, OrderStatus.CHECKOUT))
@@ -78,6 +86,8 @@ class CartControllerTest {
 
         when(paymentService.getBalance())
                 .thenReturn(Mono.just(BigDecimal.valueOf(1000)));
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
 
         webTestClient.get()
                 .uri("/cart/checkout/{id}", 1L)
@@ -95,11 +105,14 @@ class CartControllerTest {
     }
 
     @Test
+    @WithMockUser
     void whenPostCheckout_shouldChangeOrderStatusToCheckout() {
         when(cartService.moveCartToCheckout(1L))
                 .thenReturn(Mono.empty());
 
-        webTestClient.post()
+        webTestClient
+                .mutateWith(csrf())
+                .post()
                 .uri("/cart/checkout/{id}", 1L)
                 .exchange()
                 .expectStatus().is3xxRedirection();
@@ -108,11 +121,14 @@ class CartControllerTest {
     }
 
     @Test
+    @WithMockUser
     void whenPostPurchase_shouldChangeOrderStatusToPaid() {
         when(cartService.confirmPurchase(1L))
                 .thenReturn(Mono.empty());
 
-        webTestClient.post()
+        webTestClient
+                .mutateWith(csrf())
+                .post()
                 .uri("/cart/purchase/{id}", 1L)
                 .exchange()
                 .expectStatus().is3xxRedirection();
@@ -122,11 +138,14 @@ class CartControllerTest {
 
 
     @Test
+    @WithMockUser
     void whenPostAddToCart_shouldAddProductToCart() {
         when(cartService.addProduct(1L))
                 .thenReturn(Mono.empty());
 
-        webTestClient.post()
+        webTestClient
+                .mutateWith(csrf())
+                .post()
                 .uri("/cart/add/{id}", 1L)
                 .exchange()
                 .expectStatus().isOk();
@@ -135,11 +154,14 @@ class CartControllerTest {
     }
 
     @Test
+    @WithMockUser
     void whenPostUpdateQuantity_shouldChangeQuantity() {
         when(cartService.updateQuantity(1L, 3))
                 .thenReturn(Mono.empty());
 
-        webTestClient.post()
+        webTestClient
+                .mutateWith(csrf())
+                .post()
                 .uri(builder -> builder
                         .path("/cart/update/{id}")
                         .queryParam("change", "3")
@@ -151,11 +173,14 @@ class CartControllerTest {
     }
 
     @Test
+    @WithMockUser
     void whenPostRemoveProductFromCart_shouldRemoveOrderItemFromCart() {
         when(cartService.removeProduct(1L))
                 .thenReturn(Mono.empty());
 
-        webTestClient.post()
+        webTestClient
+                .mutateWith(csrf())
+                .post()
                 .uri("/cart/remove/{id}", 1L)
                 .exchange()
                 .expectStatus()
@@ -180,6 +205,7 @@ class CartControllerTest {
                 .build();
         return OrderDto.builder()
                 .id(1L)
+                .userId(1L)
                 .orderItems(new ArrayList<>(List.of(orderItem1)))
                 .totalPrice(100.0f)
                 .createdAt(LocalDate.now())

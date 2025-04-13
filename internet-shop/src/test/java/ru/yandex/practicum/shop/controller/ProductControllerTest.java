@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -20,6 +21,7 @@ import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.ProductService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
 @WebFluxTest(ProductController.class)
 class ProductControllerTest {
@@ -45,15 +48,20 @@ class ProductControllerTest {
     @MockitoBean
     OrderService orderService;
 
+    @MockitoBean
+    SecurityUtils securityUtils;
+
     @Test
+    @WithMockUser
     void whenGetProductList_shouldGetProductList() {
         Pageable pageable = PageRequest.of(0, 2);
         var products = getProducts();
         Page<ProductDto> productPage = new PageImpl<>(products, pageable, products.size());
 
+        when(securityUtils.getUserId()).thenReturn(Mono.just(1L));
         when(productService.findAll(any(Pageable.class)))
                 .thenReturn(Mono.just(productPage));
-        when(orderService.findLastActiveOrder())
+        when(orderService.findLastActiveOrder(anyLong()))
                 .thenReturn(Mono.just(prepareOrder(OrderStatus.ACTIVE)));
 
         webTestClient.get()
@@ -69,18 +77,20 @@ class ProductControllerTest {
                 });
 
         verify(productService, times(1)).findAll(any(Pageable.class));
-        verify(orderService, times(1)).findLastActiveOrder();
+        verify(orderService, times(1)).findLastActiveOrder(anyLong());
     }
 
     @Test
+    @WithMockUser
     void whenGetProductListFiltered_shouldGetProductList() {
         Pageable pageable = PageRequest.of(0, 2);
         var products = getProducts();
         Page<ProductDto> productPage = new PageImpl<>(products, pageable, products.size());
 
+        when(securityUtils.getUserId()).thenReturn(Mono.just(1L));
         when(productService.findAllByNameContainingIgnoreCase(anyString(), any(Pageable.class)))
                 .thenReturn(Mono.just(productPage));
-        when(orderService.findLastActiveOrder())
+        when(orderService.findLastActiveOrder(anyLong()))
                 .thenReturn(Mono.just(prepareOrder(OrderStatus.ACTIVE)));
 
         webTestClient.get()
@@ -101,19 +111,21 @@ class ProductControllerTest {
                 });
 
         verify(productService, times(1)).findAllByNameContainingIgnoreCase(anyString(), any(Pageable.class));
-        verify(orderService, times(1)).findLastActiveOrder();
+        verify(orderService, times(1)).findLastActiveOrder(anyLong());
     }
 
     @Test
+    @WithMockUser
     void whenGetProductCard_shouldGetProduct() {
         var productDto = new ProductDto();
         productDto.setId(1L);
         productDto.setName("Product 1");
         productDto.setDescription("Description of Product 1");
 
+        when(securityUtils.getUserId()).thenReturn(Mono.just(1L));
         when(productService.getProductById(anyLong()))
                 .thenReturn(Mono.just(productDto));
-        when(orderService.findLastActiveOrder())
+        when(orderService.findLastActiveOrder(anyLong()))
                 .thenReturn(Mono.just(prepareOrder(OrderStatus.ACTIVE)));
 
         webTestClient.get()
@@ -129,10 +141,11 @@ class ProductControllerTest {
                 });
 
         verify(productService, times(1)).getProductById(anyLong());
-        verify(orderService, times(1)).findLastActiveOrder();
+        verify(orderService, times(1)).findLastActiveOrder(anyLong());
     }
 
     @Test
+    @WithMockUser
     void whenGetAddProduct_shouldReceiveNewProductView() {
         webTestClient.get()
                 .uri("/shop/product/add")
@@ -148,6 +161,7 @@ class ProductControllerTest {
     }
 
     @Test
+    @WithMockUser
     void whenPost() {
         MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
         bodyBuilder.part("imageFile", new byte[0])
@@ -160,7 +174,9 @@ class ProductControllerTest {
         when(productService.saveProductWithImage(any(ProductDto.class), any(FilePart.class)))
                 .thenReturn(Mono.empty());
 
-        webTestClient.post()
+        webTestClient
+                .mutateWith(csrf())
+                .post()
                 .uri("/shop/product/add")
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
