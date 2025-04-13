@@ -24,6 +24,7 @@ class OrderRepositoryTest extends AbstractTestContainer {
     @Test
     void whenFindFistByStatusOrderByCreatedAtDesc_thenShouldReturnOrder() {
         Order order = Order.builder()
+                .userId(1L)
                 .status(OrderStatus.ACTIVE)
                 .createdAt(LocalDate.now())
                 .build();
@@ -37,6 +38,7 @@ class OrderRepositoryTest extends AbstractTestContainer {
     @Test
     void whenFindByIdAndStatus_thenShouldReturnOrder() {
         Order order = Order.builder()
+                .userId(1L)
                 .status(OrderStatus.ACTIVE)
                 .createdAt(LocalDate.now())
                 .build();
