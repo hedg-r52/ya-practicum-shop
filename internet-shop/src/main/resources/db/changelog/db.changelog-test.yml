@@ -1,13 +1,16 @@
 databaseChangeLog:
   - include:
-      file: 001-init-order-schema.yml
+      file: 001-init-user-schema.yml
       relativeToChangelogFile: true
   - include:
-      file: 002-init-order-item-schema.yml
+      file: 002-init-order-schema.yml
       relativeToChangelogFile: true
   - include:
-      file: 003-init-image-schema.yml
+      file: 003-init-order-item-schema.yml
       relativeToChangelogFile: true
   - include:
-      file: 004-init-product-schema.yml
+      file: 004-init-image-schema.yml
+      relativeToChangelogFile: true
+  - include:
+      file: 005-init-product-schema.yml
       relativeToChangelogFile: true

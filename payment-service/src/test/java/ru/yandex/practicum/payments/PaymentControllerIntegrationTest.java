@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import ru.yandex.practicum.payments.domain.DepositRequest;
 import ru.yandex.practicum.payments.domain.PaymentRequest;
@@ -34,6 +35,7 @@ class PaymentControllerIntegrationTest extends AbstractTestContainer {
                 .block();
 
         var billingAccount = BillingAccount.builder()
+                .userId(1L)
                 .money(BigDecimal.valueOf(100))
                 .createdAt(LocalDate.now())
                 .modifiedAt(LocalDate.now())
@@ -44,8 +46,10 @@ class PaymentControllerIntegrationTest extends AbstractTestContainer {
 
     @Test
     void whenGetBalance_thenShouldReturnBalance() {
-        webTestClient.get()
-                .uri("/payments")
+        webTestClient
+                .mutateWith(SecurityMockServerConfigurers.mockUser())
+                .get()
+                .uri("/payments/balance/{id}", 1L)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
@@ -58,8 +62,10 @@ class PaymentControllerIntegrationTest extends AbstractTestContainer {
         var request = new PaymentRequest();
         request.setValue(BigDecimal.valueOf(50));
 
-        webTestClient.patch()
-                .uri("/payments")
+        webTestClient
+                .mutateWith(SecurityMockServerConfigurers.mockUser())
+                .post()
+                .uri("/payments/withdraw/{id}", 1L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -74,8 +80,10 @@ class PaymentControllerIntegrationTest extends AbstractTestContainer {
         var request = new PaymentRequest();
         request.setValue(BigDecimal.valueOf(2500));
 
-        webTestClient.patch()
-                .uri("/payments")
+        webTestClient
+                .mutateWith(SecurityMockServerConfigurers.mockUser())
+                .post()
+                .uri("/payments/withdraw/{id}", 1L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -90,8 +98,10 @@ class PaymentControllerIntegrationTest extends AbstractTestContainer {
         var request = new DepositRequest();
         request.setValue(BigDecimal.valueOf(1500));
 
-        webTestClient.post()
-                .uri("/payments")
+        webTestClient
+                .mutateWith(SecurityMockServerConfigurers.mockUser())
+                .post()
+                .uri("/payments/refill/{id}", 1L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()

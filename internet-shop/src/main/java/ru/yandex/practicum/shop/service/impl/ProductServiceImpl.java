@@ -18,9 +18,9 @@ import ru.yandex.practicum.shop.mapper.ProductMapper;
 import ru.yandex.practicum.shop.repository.ImageRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.ProductService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -31,20 +31,27 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final ImageRepository imageRepository;
     private final ProductMapper productMapper;
+    private final SecurityUtils securityUtils;
 
     @Override
     public Mono<Page<ProductDto>> findAll(Pageable pageable) {
-        String cacheKey = "page:" + pageable.getPageNumber() + ":size:" + pageable.getPageSize();
-        Cache cache = cacheManager.getCache("products");
+        return securityUtils.getUserId()
+                .defaultIfEmpty(0L)
+                .flatMap(userId -> {
+                    String cacheKey = "user:" + userId
+                            + ":page:" + pageable.getPageNumber()
+                            + ":size:" + pageable.getPageSize()
+                            + ":" + pageable.getSort();
+                    Cache cache = cacheManager.getCache("products");
 
-        if (cache != null) {
-            PageImpl<ProductDto> page = cache.get(cacheKey, PageImpl.class);
-            if (page != null) {
-                return Mono.just(page);
-            }
-        }
+                if (cache != null) {
+                    PageImpl<ProductDto> page = cache.get(cacheKey, PageImpl.class);
+                    if (page != null) {
+                        return Mono.just(page);
+                    }
+                }
 
-        return productRepository.findAllBy(pageable)
+                return productRepository.findAllBy(pageable)
                 .map(productMapper::toProductDto)
                 .collectList()
                 .zipWith(productRepository.count())
@@ -55,7 +62,8 @@ public class ProductServiceImpl implements ProductService {
                     }
                     return page;
                 });
-    }
+    });
+        }
 
     @Override
     public Mono<Page<ProductDto>> findAllByNameContainingIgnoreCase(String searchString, Pageable pageable) {

@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: create_table_orders
+      id: create_table_users
       author: hedg-r52
       changes:
         - createTable:
@@ -13,7 +13,18 @@ databaseChangeLog:
                   constraints:
                     primaryKey: true
               - column:
-                  name: status
+                  name: login
+                  type: varchar
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: password
+                  type: varchar
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
                   type: varchar
                   constraints:
                     nullable: false
@@ -22,8 +33,13 @@ databaseChangeLog:
                   type: date
                   constraints:
                     nullable: false
-            tableName: orders
+              - column:
+                  name: modified_at
+                  type: date
+                  constraints:
+                    nullable: false
+            tableName: users
             schemaName: public
       rollback:
         - dropTable:
-            tableName: orders
+            tableName: users

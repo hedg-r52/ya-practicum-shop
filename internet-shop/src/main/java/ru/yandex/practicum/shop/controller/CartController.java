@@ -1,7 +1,10 @@
 package ru.yandex.practicum.shop.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +18,9 @@ import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.OrderService;
 import ru.yandex.practicum.shop.service.PaymentService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +35,7 @@ public class CartController {
     private final PaymentService paymentService;
 
     private static final String SUCCESS = "success";
+    private final SecurityUtils securityUtils;
 
     @GetMapping
     public Mono<String> cart(Model model) {
@@ -47,15 +53,21 @@ public class CartController {
 
     @GetMapping("/checkout/{orderId}")
     public Mono<String> checkoutPage(Model model, @PathVariable Long orderId) {
-        return orderService.findByIdAndStatus(orderId, OrderStatus.CHECKOUT)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Заказ с id = " + orderId + " не найден")))
-                .doOnNext(order -> {
-                    model.addAttribute("order", order);
-                    model.addAttribute("total", Math.round(order.getTotalPrice() * 100) / 100f);
-                    model.addAttribute("balance", paymentService.getBalance()
-                            .map(balance -> balance.setScale(2, RoundingMode.HALF_UP)));
-                })
-                .thenReturn("checkout");
+        return securityUtils.getUserId()
+                .flatMap(userId -> orderService.findByIdAndStatus(orderId, OrderStatus.CHECKOUT)
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Заказ с id = " + orderId + " не найден")))
+                        .flatMap(order -> {
+                            if (!order.getUserId().equals(userId)) {
+                                return Mono.error(new AccessDeniedException("Недостаточно прав для доступа к заказу"));
+                            }
+
+                            model.addAttribute("order", order);
+                            model.addAttribute("total", Math.round(order.getTotalPrice() * 100) / 100f);
+                            model.addAttribute("balance", paymentService.getBalance()
+                                    .map(balance -> balance.setScale(2, RoundingMode.HALF_UP)));
+                            return Mono.just("checkout");
+                        })
+                );
     }
 
     @PostMapping("/checkout/{orderId}")

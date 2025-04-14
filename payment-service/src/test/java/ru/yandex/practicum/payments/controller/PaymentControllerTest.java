@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -15,6 +17,7 @@ import ru.yandex.practicum.payments.service.PaymentService;
 import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,15 +32,17 @@ class PaymentControllerTest {
     private PaymentService paymentService;
 
     @Test
+    @WithMockUser
     void whenGetBalance_shouldReturnPositiveBalance() {
         var balanceResponse = new BalanceResponse();
         balanceResponse.setValue(BigDecimal.valueOf(100.00));
 
-        when(paymentService.getBalance())
+        when(paymentService.getBalance(anyLong()))
                 .thenReturn(Mono.just(balanceResponse));
 
-        webTestClient.get()
-                .uri("/payments")
+        webTestClient
+                .get()
+                .uri("/payments/balance/{id}", 1L)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
@@ -46,6 +51,7 @@ class PaymentControllerTest {
     }
 
     @Test
+    @WithMockUser
     void whenProcessPayments_shouldProcessPaymentSuccessfully() {
         var balanceResponse = new BalanceResponse();
         balanceResponse.setValue(BigDecimal.valueOf(500));
@@ -53,11 +59,13 @@ class PaymentControllerTest {
         var request = new PaymentRequest();
         request.setValue(BigDecimal.valueOf(1000));
 
-        when(paymentService.processPayment(request))
+        when(paymentService.processPayment(anyLong(), any()))
                 .thenReturn(Mono.just(balanceResponse));
 
-        webTestClient.patch()
-                .uri("/payments")
+        webTestClient
+                .mutateWith(SecurityMockServerConfigurers.csrf())
+                .post()
+                .uri("/payments/withdraw/{id}", 1L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -67,21 +75,24 @@ class PaymentControllerTest {
                 .jsonPath("$.value").isEqualTo(500);
 
         verify(paymentService, times(1))
-                .processPayment(any(PaymentRequest.class));
+                .processPayment(anyLong(), any(PaymentRequest.class));
     }
 
     @Test
+    @WithMockUser
     void whenDepositChanges_thenBalanceShouldBeChanged() {
         var balanceResponse = new BalanceResponse();
         balanceResponse.setValue(BigDecimal.valueOf(2000));
         var request = new DepositRequest();
         request.setValue(BigDecimal.valueOf(1500));
 
-        when(paymentService.depositMoney(request))
+        when(paymentService.depositMoney(anyLong(), any()))
                 .thenReturn(Mono.just(balanceResponse));
 
-        webTestClient.post()
-                .uri("/payments")
+        webTestClient
+                .mutateWith(SecurityMockServerConfigurers.csrf())
+                .post()
+                .uri("/payments/refill/{id}", 1L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -91,7 +102,7 @@ class PaymentControllerTest {
                 .jsonPath("$.value").isEqualTo(2000);
 
         verify(paymentService, times(1))
-                .depositMoney(any(DepositRequest.class));
+                .depositMoney(anyLong(), any(DepositRequest.class));
     }
 
 }

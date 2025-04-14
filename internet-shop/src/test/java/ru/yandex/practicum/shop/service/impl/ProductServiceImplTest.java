@@ -24,6 +24,7 @@ import ru.yandex.practicum.shop.repository.ImageRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.PaymentService;
 import ru.yandex.practicum.shop.service.ProductService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -57,6 +58,9 @@ class ProductServiceImplTest {
     @MockitoBean
     private ProductMapper productMapper;
 
+    @MockitoBean
+    SecurityUtils securityUtils;
+
     @Test
     void whenFindAll_ThenShouldReturnPageableResponse() {
         Pageable pageable = PageRequest.of(0, 2);
@@ -79,6 +83,8 @@ class ProductServiceImplTest {
         productDto2.setId(2L);
         productDto2.setName("Product 2");
 
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
         when(productRepository.findAllBy(pageable))
                 .thenReturn(Flux.fromIterable(products));
         when(productRepository.count())

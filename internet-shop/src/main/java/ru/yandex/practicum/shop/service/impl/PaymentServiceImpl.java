@@ -8,6 +8,7 @@ import ru.yandex.practicum.shop.dto.BalanceResponse;
 import ru.yandex.practicum.shop.dto.DepositRequest;
 import ru.yandex.practicum.shop.dto.PaymentRequest;
 import ru.yandex.practicum.shop.service.PaymentService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,20 +18,23 @@ import java.math.RoundingMode;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentsApi paymentsApi;
+    private final SecurityUtils securityUtils;
 
     @Override
     public Mono<BigDecimal> getBalance() {
-        return paymentsApi.paymentsGet()
-                .onErrorResume(throwable -> Mono.empty())
-                .onErrorComplete()
-                .map(BalanceResponse::getValue);
+        return securityUtils.getUserId()
+                        .flatMap(paymentsApi::paymentsBalanceUserIdGet)
+                        .onErrorResume(throwable -> Mono.empty())
+                        .onErrorComplete()
+                        .map(BalanceResponse::getValue);
     }
 
     @Override
     public Mono<BigDecimal> processPayment(BigDecimal value) {
         PaymentRequest paymentRequest = new PaymentRequest();
         paymentRequest.setValue(value);
-        return paymentsApi.paymentsPatch(paymentRequest)
+        return securityUtils.getUserId()
+                .flatMap(userId -> paymentsApi.paymentsWithdrawUserIdPost(userId, paymentRequest))
                 .map(balanceResponse -> balanceResponse.getValue().setScale(2, RoundingMode.HALF_UP));
     }
 
@@ -38,7 +42,8 @@ public class PaymentServiceImpl implements PaymentService {
     public Mono<BigDecimal> depositPayment(BigDecimal value) {
         DepositRequest depositRequest = new DepositRequest();
         depositRequest.setValue(value);
-        return paymentsApi.paymentsPost(depositRequest)
+        return securityUtils.getUserId()
+                .flatMap(userId -> paymentsApi.paymentsRefillUserIdPost(userId, depositRequest))
                 .map(BalanceResponse::getValue);
     }
 

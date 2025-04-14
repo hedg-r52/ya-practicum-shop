@@ -19,7 +19,9 @@ import ru.yandex.practicum.shop.repository.OrderItemRepository;
 import ru.yandex.practicum.shop.repository.OrderRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.OrderService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,10 +36,12 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final OrderItemMapper orderItemMapper;
+    private final SecurityUtils securityUtils;
 
     @Override
-    public Mono<OrderDto> findLastActiveOrder() {
-        return orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE)
+    public Mono<OrderDto> findLastActiveOrder(Long userId) {
+        return orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(userId, OrderStatus.ACTIVE)
+                .switchIfEmpty(createNewActiveOrder())
                 .flatMap(order -> findOrderItemsByOrderId(order.getId())
                         .flatMap(items -> {
                             List<Long> productIds = items.stream().map(OrderItemDto::getProductId).toList();
@@ -61,8 +65,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Mono<Page<OrderDto>> findAll(Pageable pageable) {
-        return orderRepository.findAllBy(pageable)
+    public Mono<Page<OrderDto>> findAll(Long userId, Pageable pageable) {
+        return orderRepository.findAllByUserId(userId, pageable)
                 .collectList()
                 .flatMap(orders -> {
                     List<Long> orderIds = orders.stream()
@@ -89,7 +93,7 @@ public class OrderServiceImpl implements OrderService {
                                                 .toList()
                                         );
                             })
-                            .zipWith(orderRepository.count())
+                            .zipWith(orderRepository.countByUserId(userId))
                             .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
                 });
 
@@ -124,5 +128,16 @@ public class OrderServiceImpl implements OrderService {
                                 .price(product.getPrice())
                                 .build()
                 );
+    }
+
+    private Mono<Order> createNewActiveOrder() {
+        return securityUtils.getUserId()
+                .flatMap(userId -> {
+                    Order newOrder = new Order();
+                    newOrder.setUserId(userId);
+                    newOrder.setStatus(OrderStatus.ACTIVE);
+                    newOrder.setCreatedAt(LocalDate.now());
+                    return orderRepository.save(newOrder);
+                });
     }
 }

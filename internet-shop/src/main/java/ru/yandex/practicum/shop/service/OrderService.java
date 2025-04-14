@@ -7,9 +7,9 @@ import ru.yandex.practicum.shop.dto.OrderDto;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 
 public interface OrderService {
-    Mono<OrderDto> findLastActiveOrder();
+    Mono<OrderDto> findLastActiveOrder(Long userId);
 
     Mono<OrderDto> findByIdAndStatus(Long id, OrderStatus status);
 
-    Mono<Page<OrderDto>> findAll(Pageable pageable);
+    Mono<Page<OrderDto>> findAll(Long userId, Pageable pageable);
 }

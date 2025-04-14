@@ -7,6 +7,9 @@ databaseChangeLog:
             tableName: billing_account
             columns:
               - column:
+                  name: user_id
+                  value: '1'
+              - column:
                   name: money
                   value: '1000.00'
               - column:

@@ -20,11 +20,13 @@ import ru.yandex.practicum.shop.repository.OrderItemRepository;
 import ru.yandex.practicum.shop.repository.OrderRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.OrderService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,22 +50,27 @@ class OrderServiceImplTest {
     @MockitoBean
     private ProductRepository productRepository;
 
+    @MockitoBean
+    SecurityUtils securityUtils;
+
     @Test
     void whenFindLastActiveOrder_whenGetActiveOrder() {
-        Order order = Order.builder().id(1L).build();
+        Order order = Order.builder().id(1L).userId(1L).build();
 
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(orderItemRepository.findAllByOrderId(eq(order.getId()), any(Sort.class)))
                 .thenReturn(Flux.just(getOrderItem()));
         when(productRepository.findAllById(List.of(1L)))
                 .thenReturn(Flux.just(getProduct1()));
 
-        StepVerifier.create(orderService.findLastActiveOrder())
+        StepVerifier.create(orderService.findLastActiveOrder(1L))
                 .assertNext(orderDto -> assertEquals(1L, order.getId()))
                 .verifyComplete();
 
-        verify(orderRepository, times(1)).findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE);
+        verify(orderRepository, times(1)).findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE);
     }
 
     @Test
@@ -88,22 +95,22 @@ class OrderServiceImplTest {
     void whenFindAll_whenGetActiveOrder() {
         Pageable pageable = PageRequest.of(0, 2);
 
-        Order order1 = Order.builder().id(1L).build();
-        Order order2 = Order.builder().id(2L).build();
+        Order order1 = Order.builder().id(1L).userId(1L).build();
+        Order order2 = Order.builder().id(2L).userId(2L).build();
 
         OrderItem oi1 = getOrderItem1();
         OrderItem oi2 = getOrderItem2();
 
-        when(orderRepository.findAllBy(pageable))
+        when(orderRepository.findAllByUserId(1L, pageable))
                 .thenReturn(Flux.just(order1, order2));
-        when(orderRepository.count())
+        when(orderRepository.countByUserId(anyLong()))
                 .thenReturn(Mono.just(2L));
         when(orderItemRepository.findAllByOrderIds(List.of(1L, 2L)))
                 .thenReturn(Flux.just(oi1, oi2));
         when(productRepository.findAllById(List.of(1L, 2L)))
                 .thenReturn(Flux.just(getProduct1(), getProduct2()));
 
-        StepVerifier.create(orderService.findAll(pageable))
+        StepVerifier.create(orderService.findAll(1L, pageable))
                 .assertNext(page -> {
                     assertEquals(2, page.getContent().size());
                     assertEquals(1L, page.getContent().get(0).getId());
@@ -111,7 +118,7 @@ class OrderServiceImplTest {
                 })
                 .verifyComplete();
 
-        verify(orderRepository, times(1)).findAllBy(pageable);
+        verify(orderRepository, times(1)).findAllByUserId(1L, pageable);
     }
 
     private OrderItem getOrderItem1() {

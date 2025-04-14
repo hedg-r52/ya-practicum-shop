@@ -21,7 +21,13 @@ tasks.register('buildClient', GenerateTask) {
 sourceSets.main.java.srcDir "$projectDir/build/generated/src/main/java"
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6:3.1.2.RELEASE'
+
     testImplementation 'com.redis:testcontainers-redis:2.2.2'
+    testImplementation 'org.springframework.security:spring-security-test'
+
 }
 
 tasks.named('compileJava') {

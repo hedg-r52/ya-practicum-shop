@@ -22,6 +22,7 @@ import java.time.LocalDate;
 public class BillingAccount {
     @Id
     private Long id;
+    private Long userId;
     private BigDecimal money;
     @CreatedDate
     private LocalDate createdAt;

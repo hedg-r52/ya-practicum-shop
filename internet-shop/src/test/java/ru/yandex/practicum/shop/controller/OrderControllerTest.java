@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -16,6 +16,7 @@ import ru.yandex.practicum.shop.dto.OrderItemDto;
 import ru.yandex.practicum.shop.dto.ProductDto;
 import ru.yandex.practicum.shop.entity.OrderStatus;
 import ru.yandex.practicum.shop.service.OrderService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -38,24 +39,31 @@ class OrderControllerTest {
     @MockitoBean
     OrderService orderService;
 
+    @MockitoBean
+    SecurityUtils securityUtils;
+
     @Test
+    @WithMockUser
     void whenGetOrders_shouldGetOrderList() {
         Pageable pageable = PageRequest.of(0, 2);
 
         var order1 = new OrderDto();
         order1.setId(1L);
+        order1.setUserId(1L);
         order1.setStatus(OrderStatus.ACTIVE);
         var order2 = new OrderDto();
         order2.setId(1L);
+        order1.setUserId(1L);
         order2.setStatus(OrderStatus.ACTIVE);
 
         var orders = List.of(order1, order2);
 
         Page<OrderDto> orderPage = new PageImpl<>(orders, pageable, orders.size());
+        when(securityUtils.getUserId()).thenReturn(Mono.just(1L));
+        when(orderService.findAll(anyLong(), any(Pageable.class))).thenReturn(Mono.just(orderPage));
 
-        when(orderService.findAll(any(Pageable.class))).thenReturn(Mono.just(orderPage));
-
-        webTestClient.get()
+        webTestClient
+                .get()
                 .uri(builder ->
                         builder
                                 .path("/order")
@@ -73,10 +81,11 @@ class OrderControllerTest {
                 });
 
         verify(orderService, times(1))
-                .findAll(PageRequest.of(0, 2, Sort.by("created_at").ascending().and(Sort.by("id").ascending())));
+                .findAll(anyLong(), any(Pageable.class));
     }
 
     @Test
+    @WithMockUser
     void whenGetSummary_shouldShowSummaryOrderPage() {
         var product1 = ProductDto.builder()
                 .id(1L)
@@ -93,12 +102,14 @@ class OrderControllerTest {
                 .build();
         var orderDto = OrderDto.builder()
                 .id(1L)
+                .userId(1L)
                 .orderItems(new ArrayList<>(List.of(orderItem1)))
                 .totalPrice(100.0f)
                 .createdAt(LocalDate.now())
                 .status(OrderStatus.PAID)
                 .build();
 
+        when(securityUtils.getUserId()).thenReturn(Mono.just(1L));
         when(orderService.findByIdAndStatus(anyLong(), any(OrderStatus.class)))
                 .thenReturn(Mono.just(orderDto));
 

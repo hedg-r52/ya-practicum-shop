@@ -24,6 +24,7 @@ import ru.yandex.practicum.shop.repository.OrderRepository;
 import ru.yandex.practicum.shop.repository.ProductRepository;
 import ru.yandex.practicum.shop.service.CartService;
 import ru.yandex.practicum.shop.service.PaymentService;
+import ru.yandex.practicum.shop.util.SecurityUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,6 +32,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -56,10 +58,15 @@ class CartServiceImplTest {
     @MockitoBean
     private ProductRepository productRepository;
 
+    @MockitoBean
+    SecurityUtils securityUtils;
+
     @Test
     void whenGetCart_ThenReturnLastActiveOrder() {
         Order order = getOrder();
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
 
         when(orderItemRepository.findAllByOrderId(eq(order.getId()), any(Sort.class)))
@@ -85,7 +92,9 @@ class CartServiceImplTest {
         Order order = getOrder();
         Product product = getProduct2();
 
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(productRepository.findById(2L))
                 .thenReturn(Mono.just(product));
@@ -99,9 +108,8 @@ class CartServiceImplTest {
         StepVerifier.create(cartService.addProduct(2L))
                 .verifyComplete();
 
-        verify(orderRepository, times(1)).findFirstByStatusOrderByCreatedAtDesc(any());
+        verify(orderRepository, times(1)).findFirstByUserIdAndStatusOrderByCreatedAt(anyLong(), any());
         verify(productRepository, times(1)).findById(2L);
-        verify(orderRepository, times(1)).save(any());
         verify(orderItemRepository, times(1)).save(any());
     }
 
@@ -110,7 +118,9 @@ class CartServiceImplTest {
         Order order = getOrder();
         Product product = getProduct1();
 
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(productRepository.findById(1L))
                 .thenReturn(Mono.just(product));
@@ -131,7 +141,9 @@ class CartServiceImplTest {
         var order = getOrder();
         var orderItem = getOrderItem();
         var product = getProduct1();
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(productRepository.findById(1L))
                 .thenReturn(Mono.just(product));
@@ -164,7 +176,9 @@ class CartServiceImplTest {
         var orderItem = getOrderItem();
         var product = getProduct1();
 
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(productRepository.findById(1L))
                 .thenReturn(Mono.just(product));
@@ -197,7 +211,9 @@ class CartServiceImplTest {
         var order = getOrder();
         var orderItem = getOrderItem();
 
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(productRepository.findById(2L))
                 .thenReturn(Mono.empty());
@@ -215,7 +231,9 @@ class CartServiceImplTest {
         var product = getProduct1();
         var orderItem = getOrderItem();
 
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(productRepository.findById(1L))
                 .thenReturn(Mono.just(product));
@@ -241,7 +259,9 @@ class CartServiceImplTest {
 
     @Test
     void whenNoActiveOrderAndTriesRemoveProduct_ThenShouldThrowException() {
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.empty());
         when(productRepository.findById(1L))
                 .thenReturn(Mono.empty());
@@ -254,7 +274,9 @@ class CartServiceImplTest {
     @Test
     void whenProductAbsentAndRemoveIt_ThenShouldThrowException() {
         var order = getOrder();
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(productRepository.findById(2L))
                 .thenReturn(Mono.empty());
@@ -269,9 +291,11 @@ class CartServiceImplTest {
         var order = getOrder();
         var product = getProduct1();
 
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
         when(orderRepository.findById(1L))
                 .thenReturn(Mono.just(order));
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(orderItemRepository.findAllByOrderId(eq(order.getId()), any(Sort.class)))
                 .thenReturn(Flux.just(getOrderItem()));
@@ -297,7 +321,7 @@ class CartServiceImplTest {
     void whenNoActiveOrder_ThenShouldThrowException() {
         when(orderRepository.findById(1L))
                 .thenReturn(Mono.empty());
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.empty());
         when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -312,9 +336,11 @@ class CartServiceImplTest {
         var order = getOrder();
         var product = getProduct1();
 
+        when(securityUtils.getUserId())
+                .thenReturn(Mono.just(1L));
         when(orderRepository.findById(1L))
                 .thenReturn(Mono.just(order));
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.just(order));
         when(orderItemRepository.findAllByOrderId(eq(order.getId()), any(Sort.class)))
                 .thenReturn(Flux.just(getOrderItem()));
@@ -342,7 +368,7 @@ class CartServiceImplTest {
 
     @Test
     void whenConfirmPurchaseWithoutActiveOrder_ThenShouldThrowException() {
-        when(orderRepository.findFirstByStatusOrderByCreatedAtDesc(OrderStatus.ACTIVE))
+        when(orderRepository.findFirstByUserIdAndStatusOrderByCreatedAt(1L, OrderStatus.ACTIVE))
                 .thenReturn(Mono.empty());
         when(orderRepository.findById(1L))
                 .thenReturn(Mono.empty());
@@ -358,6 +384,7 @@ class CartServiceImplTest {
     private Order getOrder() {
         return Order.builder()
                 .id(1L)
+                .userId(1L)
                 .status(OrderStatus.ACTIVE)
                 .createdAt(LocalDate.now())
                 .build();

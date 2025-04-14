@@ -2,12 +2,38 @@ openapi: 3.0.4
 info:
   title: Payment Service
   description: Payment Service API
-  version: 1.0.0
+  version: 1.0.1
 paths:
-  /payments:
-    get:
+  /payments/create/{userId}:
+    post:
+      security:
+        - Bearer: [ ]
       tags:
         - payments
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      summary: Создание счета пользователя
+      responses:
+        200:
+          description: Счет успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        500:
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /payments/balance/{userId}:
+    get:
+      security:
+        - Bearer: [ ]
+      tags:
+        - payments
+      parameters:
+        - $ref: '#/components/parameters/UserId'
       summary: Получить баланс
       responses:
         200:
@@ -22,9 +48,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /payments/refill/{userId}:
     post:
+      security:
+        - Bearer: [ ]
       tags:
         - payments
+      parameters:
+        - $ref: '#/components/parameters/UserId'
       summary: Пополнить баланс
       requestBody:
         required: true
@@ -45,9 +76,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-    patch:
+  /payments/withdraw/{userId}:
+    post:
+      security:
+        - Bearer: [ ]
       tags:
         - payments
+      parameters:
+        - $ref: "#/components/parameters/UserId"
       summary: Списать денежные средства со счета
       requestBody:
         required: true
@@ -78,6 +114,22 @@ tags:
   - name: payments
     description: Платежные операции
 components:
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: >-
+        Введите токен начинающийся `Bearer: ` prefix. Пример: "Bearer eyXXXXXX
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Ид пользователя
+      schema:
+        type: integer
+        format: int64
   schemas:
     BalanceResponse:
       description: Текущий баланс счета
