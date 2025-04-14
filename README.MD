@@ -8,18 +8,25 @@
 
 ```sh
 ./gradlew :payment-service:unit
+```
+```sh
 ./gradlew :internet-shop:unit
 ```
 
-Для корректной работы указать переменные среды(переменные окружения):
+После того как поднимутся все контейнеры, нужно зайти в keycloak по адресу
+
 ```
-- POSTGRES_USER
-- POSTGRES_PASSWORD
+http://localhost:8180/
 ```
 
-Для запуска интеграционных тестов для витрины нужно запустить сервис платежей:
-```sh
-docker pull postgres:17-alpine && docker run -d --name pg-payments -p 5433:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=payments postgres:17-alpine && ./gradlew :payment-service:bootRun
+Создать клиента shop
+![](img/capability-config.png)
+
+и прописать секрет для контейнера shop-app в docker-compose файле (SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_CLIENT_SECRET),
+после чего перезапустить этот контейнер и приложение будет доступно по адресу:
+
+```
+http://localhost:8080/shop/product
 ```
 
 Для запуска в докере вместе с PostgreSQL и запуска его на порту 8080 выполнить:

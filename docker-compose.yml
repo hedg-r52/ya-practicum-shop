@@ -29,6 +29,11 @@ services:
       - REDIS_PASSWORD=password
       - REDIS_PORT=6379
       - REDIS_DATABASES=16
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/realms/master" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - shop-network
   keycloak:
@@ -55,7 +60,7 @@ services:
       - redis
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      # TODO: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_CLIENT_SECRET: ...
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_SHOP_CLIENT_SECRET: in6mpZRudaIzUG27EcbJZmKY36M5BoNK
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-shop/shop
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}

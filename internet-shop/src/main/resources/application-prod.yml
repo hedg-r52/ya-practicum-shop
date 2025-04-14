@@ -36,13 +36,20 @@ spring:
       client:
         provider:
           keycloak:
-            issuer-uri: http://keycloak:8180/realms/master
+            issuer-uri: http://keycloak:8080/realms/master
+            token-uri: http://keycloak:8080/realms/master/protocol/openid-connect/token
         registration:
-          internet-shop:
+          shop:
             provider: keycloak
             authorization-grant-type: client_credentials
-            client-id: internet-shop
-            client-secret: xxx
-            scope: profile
+            client-id: shop
+            client-secret: KIroqyQolGgXQsUVBF8QiKWPtB8cubyM
             client-authentication-method: client_secret_post
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2.client: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+    org.springframework.web.reactive.function.client.ExchangeFilterFunctions: TRACE
+    org.springframework.security.oauth2.client.reactive.ReactiveOAuth2AuthorizedClientManager: TRACE
 payments-service-uri: http://payments-service:8090

@@ -38,6 +38,7 @@ public class IntegrationConfiguration {
     public ApiClient apiClient(WebClient webClient) {
         var apiClient = new ApiClient(webClient);
         apiClient.setBasePath(paymentsServiceUri);
+        log.info("Payments URI: {}", apiClient.getBasePath());
         return apiClient;
     }
 

@@ -41,8 +41,7 @@ spring:
             provider: keycloak
             authorization-grant-type: client_credentials
             client-id: shop
-            client-secret: Ck7sx7qZzfVhUcjjM3J5XDZb9UmW99ZV
-#            scope: profile
+            client-secret: KIroqyQolGgXQsUVBF8QiKWPtB8cubyM
             client-authentication-method: client_secret_post
 logging:
   level:
